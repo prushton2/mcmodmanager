@@ -1,13 +1,17 @@
+mod downloader;
 use iced::widget::{container, checkbox, text, text_input, button, column, row};
 
-use crate::downloader;
 
 #[derive(Debug, Clone)]
 pub enum Message {
     Next,
     Previous,
-    OsSetWindows,
+    
+	VersionSet(String),
+
+	OsSetWindows,
     OsSetLinux,
+	
 	ModSetSodium(bool)
 }
 
@@ -28,8 +32,8 @@ pub fn base_settings(this: &ModLoader) -> iced::Element<'_, Message> {
 		text(format!("Selected OS: {}", this.os)),
 		row![button("windows").on_press(Message::OsSetWindows), button("linux").on_press(Message::OsSetLinux)],
 	
-		text("Select your game version:\n\n"),
-		text_input()	
+		text("\n\nSelect your game version:"),
+		text_input("1.20.4", &this.version).on_input(Message::VersionSet)	
 	];
 
 	return container(element).into()
@@ -46,9 +50,9 @@ pub fn mods(this: &ModLoader) -> iced::Element<'_, Message> {
 
 pub fn download(this: &ModLoader) -> iced::Element<'_, Message> {
 	
-	// if this.has_sodium {
-	// 	downloader.download(downloadables[0]);
-	// }
+	if this.has_sodium {
+		downloader::download(&downloader::downloadables[0]);
+	}
 
 	return text("Downloading Mods").into()
 }

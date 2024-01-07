@@ -5,6 +5,8 @@ use iced::{Sandbox, Settings, Renderer};
 use iced::alignment::{Horizontal, Vertical};
 use iced::Length;
 
+use std::cmp::{min, max};
+
 mod file;
 mod windows;
 
@@ -53,7 +55,12 @@ impl Sandbox for windows::ModLoader {
         match message {
             Self::Message::Next => self.page += 1,
             Self::Message::Previous => self.page -= 1,
-            
+
+            Self::Message::VersionSet(state) => {
+                self.version = state;
+                save_state(&self);
+            }
+
             Self::Message::OsSetLinux => {
                 self.os = String::from("linux");
                 save_state(&self);
@@ -74,10 +81,12 @@ impl Sandbox for windows::ModLoader {
         
         let selected_window;
 
+        // self.page = max(min(self.page, 2), 0);
+
         match self.page {
             0 => selected_window = windows::base_settings(&self),
             1 => selected_window = windows::mods(&self),
-            1 => selected_window = windows::download(&self),
+            2 => selected_window = windows::download(&self),
             _ => selected_window = windows::null()
         };
         
