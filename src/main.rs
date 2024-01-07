@@ -1,45 +1,31 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
-use iced::widget::{container, text, button, column, row};
-use iced::{Element, Sandbox, Settings};
+use iced::widget::{container, button, column, row};
+use iced::{Sandbox, Settings};
 
 mod file;
+mod windows;
 
 static FILE_PATH: &str = "./config";
 
-
 fn main() -> iced::Result {
-    
-    ModLoader::run(Settings::default())
+    windows::ModLoader::run(Settings::default())
 }
 
 
-struct ModLoader {
-    page: i64,
-    os: String,
-}
-
-#[derive(Debug, Clone)]
-enum Message {
-    Next,
-    Previous,
-    OsSetWindows,
-    OsSetLinux
-}
-
-impl Sandbox for ModLoader {
-    type Message = Message;
+impl Sandbox for windows::ModLoader {
+    type Message = windows::Message;
 
     fn new() -> Self {
 
         let load_result = file::load_config(FILE_PATH);
-        let mut config: file::Config;
+        let config: file::Config;
 
         if load_result.is_ok() {
             config = load_result.unwrap();
         } else {
             config = file::Config {
-                os: String::from("Windows"),
+                os: String::from("windows"),
             };
         }
 
@@ -55,13 +41,13 @@ impl Sandbox for ModLoader {
 
     fn update(&mut self, message: Self::Message) {
         match message {
-            Message::Next => self.page += 1,
-            Message::Previous => self.page -= 1,
-            Message::OsSetLinux => {
+            Self::Message::Next => self.page += 1,
+            Self::Message::Previous => self.page -= 1,
+            Self::Message::OsSetLinux => {
                 self.os = String::from("linux");
                 save_state(&self);
             },
-            Message::OsSetWindows => {
+            Self::Message::OsSetWindows => {
                 self.os = String::from("windows");
                 save_state(&self);
             },
@@ -70,15 +56,18 @@ impl Sandbox for ModLoader {
 
     fn view(&self) -> iced::Element<'_, Self::Message> {
         
-        let next = button("Back").on_press(Message::Previous);
-        let prev = button("Next").on_press(Message::Next);
+        let next = button("Back").on_press(Self::Message::Previous);
+        let prev = button("Next").on_press(Self::Message::Next);
         
+        let selected_window;
 
-
+        match self.page {
+            0 => selected_window = windows::select_os(&self),
+            _ => selected_window = windows::null()
+        };
         
         let element = column![
-            text(format!("OS: {}", self.os)),
-            row![button("windows").on_press(Message::OsSetWindows), button("linux").on_press(Message::OsSetLinux)],
+            selected_window,
             row![next, prev]
         ];
 
@@ -88,10 +77,10 @@ impl Sandbox for ModLoader {
 
 }
 
-fn save_state(this: &ModLoader) -> Result<&str, &str> {
+fn save_state(this: &windows::ModLoader) {
     let config: file::Config = file::Config {
         os: this.os.clone()
     };
 
-    return file::write_config(FILE_PATH, config)
+    let _ = file::write_config(FILE_PATH, config);
 }

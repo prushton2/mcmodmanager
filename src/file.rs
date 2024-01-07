@@ -1,7 +1,6 @@
 use serde_json;
 use serde::{Serialize, Deserialize};
 use std::fs;
-use std::env;
 use std::io::Write;
 
 
@@ -46,7 +45,7 @@ pub fn write_config(file_name: &str, config: Config) -> Result<&str, &str> {
 
 
 
-pub fn delete_file(file_name: &str) -> Result<&str, &str> {
+pub fn _delete_file(file_name: &str) -> Result<&str, &str> {
 	let result = fs::remove_file(file_name);
 
 	if result.is_ok() {
