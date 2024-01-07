@@ -6,7 +6,8 @@ use std::io::Write;
 
 #[derive(Serialize, Deserialize)]
 pub struct Config {
-	pub os: String
+	pub os: String,
+	pub version: String
 }
 
 
