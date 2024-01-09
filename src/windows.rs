@@ -1,6 +1,6 @@
 mod downloader;
 use iced::widget::{container, checkbox, text, text_input, button, column, row};
-
+use std::thread;
 
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -12,7 +12,7 @@ pub enum Message {
 	OsSetWindows,
     OsSetLinux,
 	
-	ModSetSodium(bool, String)
+	SetMod(bool, String)
 }
 
 pub struct ModLoader {
@@ -42,7 +42,7 @@ pub fn base_settings(this: &ModLoader) -> iced::Element<'_, Message> {
 pub fn mods(this: &ModLoader) -> iced::Element<'_, Message> {
 	let element = column![
 		text("Select Mods:\n"),
-		checkbox("Sodium", this.has_sodium, |v| Message::ModSetSodium(v, String::from("Sodium")))
+		checkbox("Sodium", this.has_sodium, |v| Message::SetMod(v, String::from("Sodium")))
 	];
 
 	return container(element).into()
@@ -51,7 +51,9 @@ pub fn mods(this: &ModLoader) -> iced::Element<'_, Message> {
 pub fn download(this: &ModLoader) -> iced::Element<'_, Message> {
 	
 	if this.has_sodium {
-		downloader::download(&downloader::downloadables[0]);
+		let downloader = thread::spawn(|| {
+            downloader::download(&downloader::downloadables[0]);
+        });
 	}
 
 	return text("Downloading Mods").into()

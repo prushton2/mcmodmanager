@@ -15,15 +15,17 @@ pub const downloadables: [Downloadable; 1]  = [
 
 
 pub async fn download(downloadable: &Downloadable<'_>) -> Result<String, String> {
-	// let response = reqwest::get(format!("https:://api.modrinth.com/v2/project/{}/version", downloadable.slug));
+	let response = reqwest::get("https:://api.modrinth.com/v2/project/sodium/version").await;//.await?.text().await?;
 	
-	// if response.is_err {
-	// 	return Err(String::from("Bad Request"));
-	// }
+
+
+	if response.is_err() {
+		return Err(String::from("Bad Request"));
+	}
 	
-	// let body = response.await?.text().await?;
+	// let body = response?.text().await?;
 
-	// println!("body: {:?}", body);
+	println!("body: {:?}", response);
 
-	Ok(String::from("Hi"))
+	return Ok(String::from("Hi"))
 }

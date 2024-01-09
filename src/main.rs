@@ -5,7 +5,7 @@ use iced::{Sandbox, Settings, Renderer};
 use iced::alignment::{Horizontal, Vertical};
 use iced::Length;
 
-// use std::cmp::{min, max};
+use std::cmp::{min, max};
 
 mod file;
 mod windows;
@@ -75,6 +75,7 @@ impl Sandbox for windows::ModLoader {
                 self.has_sodium = state;
             }
         };
+        self.page = max(min(self.page, 2), 0);
     }
 
     fn view(&self) -> iced::Element<'_, Self::Message> {
@@ -84,7 +85,6 @@ impl Sandbox for windows::ModLoader {
         
         let selected_window;
 
-        // self.page = max(min(self.page, 2), 0);
 
         match self.page {
             0 => selected_window = windows::base_settings(&self),
