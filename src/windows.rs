@@ -12,7 +12,7 @@ pub enum Message {
 	OsSetWindows,
     OsSetLinux,
 	
-	ModSetSodium(bool)
+	ModSetSodium(bool, String)
 }
 
 pub struct ModLoader {
@@ -42,7 +42,7 @@ pub fn base_settings(this: &ModLoader) -> iced::Element<'_, Message> {
 pub fn mods(this: &ModLoader) -> iced::Element<'_, Message> {
 	let element = column![
 		text("Select Mods:\n"),
-		checkbox("Sodium", this.has_sodium, Message::ModSetSodium)
+		checkbox("Sodium", this.has_sodium, |v| Message::ModSetSodium(v, String::from("Sodium")))
 	];
 
 	return container(element).into()

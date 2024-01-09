@@ -5,7 +5,7 @@ use iced::{Sandbox, Settings, Renderer};
 use iced::alignment::{Horizontal, Vertical};
 use iced::Length;
 
-use std::cmp::{min, max};
+// use std::cmp::{min, max};
 
 mod file;
 mod windows;
@@ -70,7 +70,10 @@ impl Sandbox for windows::ModLoader {
                 save_state(&self);
             },
             
-            Self::Message::ModSetSodium(state) => self.has_sodium = state
+            Self::Message::SetMod(state, mod_name) => {
+                println!("state: {}, {}", state, mod_name);
+                self.has_sodium = state;
+            }
         };
     }
 
