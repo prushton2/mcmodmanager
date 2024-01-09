@@ -1,4 +1,3 @@
-mod downloader;
 use iced::widget::{container, checkbox, text, text_input, button, column, row};
 use std::thread;
 
@@ -12,7 +11,10 @@ pub enum Message {
 	OsSetWindows,
     OsSetLinux,
 	
-	SetMod(bool, String)
+	SetMod(bool, String),
+
+    ConfirmDownload,
+    DownloadComplete(Result<String, String>)
 }
 
 pub struct ModLoader {
@@ -50,11 +52,21 @@ pub fn mods(this: &ModLoader) -> iced::Element<'_, Message> {
 
 pub fn download(this: &ModLoader) -> iced::Element<'_, Message> {
 	
-	if this.has_sodium {
-		let downloader = thread::spawn(|| {
-            downloader::download(&downloader::downloadables[0]);
-        });
-	}
 
-	return text("Downloading Mods").into()
+
+	// if this.has_sodium {
+    // 	println!("Spawning thread");
+	// 	let downloader = thread::spawn(|| {
+    //         downloader::download(&downloader::downloadables[0]);
+    //     });
+
+    // 	println!("joining thread");
+    //     downloader.join();
+	// }
+
+    let element = column![
+		button("Download").on_press(Message::ConfirmDownload)
+	];
+
+	return container(element).into()
 }

@@ -1336,6 +1336,7 @@ dependencies = [
  "serde_arrays",
  "serde_json",
  "serial_test",
+ "tokio",
 ]
 
 [[package]]

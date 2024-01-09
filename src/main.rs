@@ -1,17 +1,19 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
 use iced::widget::{container, text, button, column, row};
-use iced::{Sandbox, Settings, Renderer};
+use iced::{Application, Settings, Renderer, executor, Theme, Command};
 use iced::alignment::{Horizontal, Vertical};
 use iced::Length;
+
+use tokio::time::{sleep, Duration};
 
 use std::cmp::{min, max};
 
 mod file;
 mod windows;
+mod downloader;
 
 static FILE_PATH: &str = "./config";
-
 
 
 fn main() -> iced::Result {
@@ -22,10 +24,13 @@ fn main() -> iced::Result {
     return windows::ModLoader::run(settings)
 }
 
-impl Sandbox for windows::ModLoader {
+impl Application for windows::ModLoader {
     type Message = windows::Message;
+    type Theme = Theme;
+    type Executor = executor::Default;
+    type Flags = ();
 
-    fn new() -> Self {
+    fn new(_flags: Self::Flags) -> (Self, Command<Self::Message>) {
 
         let load_result = file::load_config(FILE_PATH);
         let config: file::Config;
@@ -39,19 +44,22 @@ impl Sandbox for windows::ModLoader {
             };
         }
 
-        return Self {
+        return (Self {
             page: 0,
             os: config.os,
             version: config.version,
             has_sodium: false
-        }
+        }, Command::none())
     }
 
     fn title(&self) -> String {
         return String::from("MC Mod Loader")
     }
 
-    fn update(&mut self, message: Self::Message) {
+    fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
+        
+        let mut download = false;
+        
         match message {
             Self::Message::Next => self.page += 1,
             Self::Message::Previous => self.page -= 1,
@@ -73,9 +81,24 @@ impl Sandbox for windows::ModLoader {
             Self::Message::SetMod(state, mod_name) => {
                 println!("state: {}, {}", state, mod_name);
                 self.has_sodium = state;
+            },
+
+            Self::Message::ConfirmDownload => {
+                download = true;
+            }
+
+            Self::Message::DownloadComplete(result) => {
+                println!("Download done pog");
             }
         };
         self.page = max(min(self.page, 2), 0);
+
+        if download {
+            println!("Downloading");
+            return Command::perform(downloader::download(&downloader::downloadables[0]), Self::Message::DownloadComplete)
+        } else {
+            return Command::none()
+        }
     }
 
     fn view(&self) -> iced::Element<'_, Self::Message> {
