@@ -11,13 +11,13 @@ pub static MODS: phf::Map<&str, ModInfo> = phf_map! {
     "Sodium"      => ModInfo {slug: "sodium",            dependencies: vec![]},
     "Iris"        => ModInfo {slug: "iris",              dependencies: vec![]},
     "Carpet"      => ModInfo {slug: "carpet",            dependencies: vec![]},
+    "Audioplayer" => ModInfo {slug: "audioplayer",       dependencies: vec!["Voice Chat"]},
     "Voice Chat"  => ModInfo {slug: "simple-voice-chat", dependencies: vec![]},
     // "MiniHud"     => ModInfo {slug: "minihud",           dependencies: vec![]},
     // "Tweakeroo"   => ModInfo {slug: "tweakeroo",         dependencies: vec![]},
     
     "FabricAPI"   => ModInfo {slug: "fabric-api",    dependencies: vec![]},
     "MaLiLib"     => ModInfo {slug: "malilib",       dependencies: vec![]},
-    "Audioplayer" => ModInfo {slug: "audioplayer",   dependencies: vec![]},
 };
 
 
