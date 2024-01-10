@@ -1331,6 +1331,7 @@ version = "0.1.0"
 dependencies = [
  "iced",
  "num",
+ "phf",
  "reqwest",
  "serde",
  "serde_arrays",

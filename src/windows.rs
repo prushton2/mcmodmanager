@@ -1,5 +1,7 @@
-use iced::widget::{container, checkbox, text, text_input, button, column, row};
-use std::thread;
+use iced::widget::{container, checkbox, text, text_input, button, column, Column, row};
+use std::collections::HashMap;
+
+use crate::downloader;
 
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -20,7 +22,7 @@ pub struct ModLoader {
     pub page: i64,
     pub os: String,
 	pub version: String,
-	pub has_sodium: bool
+	pub mods: HashMap<String, bool>
 }
 
 pub fn null() -> iced::Element<'static, Message> {
@@ -42,29 +44,29 @@ pub fn base_settings(this: &ModLoader) -> iced::Element<'_, Message> {
 	return container(element).into()
 }
 
-pub fn mods(this: &ModLoader) -> iced::Element<'_, Message> {
-	let element = column![
-		text("Select Mods:\n"),
-		checkbox("Sodium", this.has_sodium, |v| Message::SetMod(v, String::from("Sodium")))
-	];
+pub fn mods<'a>(this: &ModLoader, mods: &phf::Map<&str, downloader::ModInfo<'a>>) -> iced::Element<'a, Message> {
+	
+
+        
+    let mut elements: Vec<iced::Element<'_, Message, iced::Renderer>> = vec![];
+    elements.push(
+        text("Select Mods:\n").into()
+    );
+
+
+    for (key, _val) in mods.entries.iter() {
+        elements.push(
+            checkbox(key.to_string(), *(this.mods.get(*key).unwrap()), |v| Message::SetMod(v, key.to_string())).into()
+        );
+    }
+
+    let element = Column::with_children(elements);
 
 	return container(element).into()
 }
 
-pub fn download(this: &ModLoader) -> iced::Element<'_, Message> {
+pub fn download(_this: &ModLoader) -> iced::Element<'_, Message> {
 	
-
-
-	// if this.has_sodium {
-    // 	println!("Spawning thread");
-	// 	let downloader = thread::spawn(|| {
-    //         downloader::download(&downloader::downloadables[0]);
-    //     });
-
-    // 	println!("joining thread");
-    //     downloader.join();
-	// }
-
     let element = column![
 		button("Download").on_press(Message::ConfirmDownload)
 	];

@@ -5,7 +5,9 @@ use iced::{Application, Settings, Renderer, executor, Theme, Command};
 use iced::alignment::{Horizontal, Vertical};
 use iced::Length;
 
-use tokio::time::{sleep, Duration};
+use std::collections::HashMap;
+
+// use tokio::time::{sleep, Duration};
 
 use std::cmp::{min, max};
 
@@ -44,11 +46,17 @@ impl Application for windows::ModLoader {
             };
         }
 
+        let mut hm: HashMap<String, bool> = HashMap::new();
+
+        for (key, _value) in downloader::MODS.entries.iter() {
+            hm.insert(key.to_string(), false);
+        }
+
         return (Self {
             page: 0,
             os: config.os,
             version: config.version,
-            has_sodium: false
+            mods: hm
         }, Command::none())
     }
 
@@ -67,27 +75,19 @@ impl Application for windows::ModLoader {
             Self::Message::VersionSet(state) => {
                 self.version = state;
                 save_state(&self);
-            }
-
+            },
             Self::Message::SetOS(state) => {
                 self.os = state;
                 save_state(&self);
             },
-            // Self::Message::OsSetWindows => {
-            //     self.os = String::from("windows");
-            //     save_state(&self);
-            // },
-            
             Self::Message::SetMod(state, mod_name) => {
                 println!("state: {}, {}", state, mod_name);
-                self.has_sodium = state;
+                self.mods.insert(mod_name, state);
             },
-
             Self::Message::ConfirmDownload => {
                 download = true;
-            }
-
-            Self::Message::DownloadComplete(result) => {
+            },
+            Self::Message::DownloadComplete(_result) => {
                 println!("Download done pog");
             }
         };
@@ -95,7 +95,7 @@ impl Application for windows::ModLoader {
 
         if download {
             println!("Downloading");
-            return Command::perform(downloader::download(&downloader::downloadables[0]), Self::Message::DownloadComplete)
+            return Command::perform(downloader::download(self.mods.clone()), Self::Message::DownloadComplete)
         } else {
             return Command::none()
         }
@@ -111,7 +111,7 @@ impl Application for windows::ModLoader {
 
         match self.page {
             0 => selected_window = windows::base_settings(&self),
-            1 => selected_window = windows::mods(&self),
+            1 => selected_window = windows::mods(&self, &downloader::MODS),
             2 => selected_window = windows::download(&self),
             _ => selected_window = windows::null()
         };

@@ -1,25 +1,55 @@
 use reqwest;
+use phf::{phf_map};
+use std::collections::HashMap;
 
-// #[derive(Clone, Copy, Debug)]
-pub struct Downloadable<'a> {
-	name: &'a str,
-	slug: &'a str //slug is a named id of a mod in modrinth
+pub struct ModInfo<'a> {
+    slug: &'a str,
+    dependencies: Vec<&'a str>
 }
 
-pub const downloadables: [Downloadable; 1]  = [
-	Downloadable {
-		name: "Sodium",
-		slug: "sodium"
-	}
-];
-
-
-pub async fn download(downloadable: &Downloadable<'_>) -> Result<String, String> {
-	println!("Thread Excecuted");
+pub static MODS: phf::Map<&str, ModInfo> = phf_map! {
+    "Sodium"      => ModInfo {slug: "sodium",            dependencies: vec![]},
+    "Iris"        => ModInfo {slug: "iris",              dependencies: vec![]},
+    "Carpet"      => ModInfo {slug: "carpet",            dependencies: vec![]},
+    "Voice Chat"  => ModInfo {slug: "simple-voice-chat", dependencies: vec![]},
+    // "MiniHud"     => ModInfo {slug: "minihud",           dependencies: vec![]},
+    // "Tweakeroo"   => ModInfo {slug: "tweakeroo",         dependencies: vec![]},
     
-    let response = reqwest::get("https:://api.modrinth.com/v2/project/sodium/version").await;//.await?.text().await?;
+    "FabricAPI"   => ModInfo {slug: "fabric-api",    dependencies: vec![]},
+    "MaLiLib"     => ModInfo {slug: "malilib",       dependencies: vec![]},
+    "Audioplayer" => ModInfo {slug: "audioplayer",   dependencies: vec![]},
+};
+
+
+pub async fn download(mods: HashMap<String, bool>) -> Result<String, String> {
+	println!("Starting download");
+    
+
+    for (key, value) in mods.iter() {
+        if !value {
+            continue;
+        }
+
+        let result = MODS.get(key);
+
+        if result.is_none() {
+            println!("Error with finding mod {}", key);
+            continue;
+        }
+
+        let info = result.unwrap();
+
+        let response = reqwest::get("https://example.com").await;
+
+        // let response = reqwest::get(
+        //     format!("https:://api.modrinth.com/v2/project/{}/version",  info.slug)).await;//.await?.text().await?;
+    
+
+        println!("{}: {:?}", info.slug, response);
+    }
+
 	
-	println!("Thread Excecuted - get completed");
+	println!("Download done");
 
 
 	// if response.is_err() {
