@@ -69,14 +69,14 @@ impl Application for windows::ModLoader {
                 save_state(&self);
             }
 
-            Self::Message::OsSetLinux => {
-                self.os = String::from("linux");
+            Self::Message::SetOS(state) => {
+                self.os = state;
                 save_state(&self);
             },
-            Self::Message::OsSetWindows => {
-                self.os = String::from("windows");
-                save_state(&self);
-            },
+            // Self::Message::OsSetWindows => {
+            //     self.os = String::from("windows");
+            //     save_state(&self);
+            // },
             
             Self::Message::SetMod(state, mod_name) => {
                 println!("state: {}, {}", state, mod_name);

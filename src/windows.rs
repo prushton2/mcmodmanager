@@ -8,8 +8,7 @@ pub enum Message {
     
 	VersionSet(String),
 
-	OsSetWindows,
-    OsSetLinux,
+	SetOS(String),
 	
 	SetMod(bool, String),
 
@@ -32,7 +31,9 @@ pub fn base_settings(this: &ModLoader) -> iced::Element<'_, Message> {
 	let element = column![
 		text("Select your operating system:\n\n"),
 		text(format!("Selected OS: {}", this.os)),
-		row![button("windows").on_press(Message::OsSetWindows), button("linux").on_press(Message::OsSetLinux)],
+		row![
+            button("windows").on_press(Message::SetOS(String::from("windows"))), 
+            button("linux").on_press(Message::SetOS(String::from("linux")))],
 	
 		text("\n\nSelect your game version:"),
 		text_input("1.20.4", &this.version).on_input(Message::VersionSet)	
