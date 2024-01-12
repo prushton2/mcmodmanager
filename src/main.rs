@@ -87,14 +87,13 @@ impl Application for windows::ModLoader {
                 download = true;
             },
             Self::Message::DownloadComplete(_result) => {
-                println!("Download Done");
                 self.page += 1;
             }
         };
         self.page = max(min(self.page, 3), 0);
 
         if download {
-            return Command::perform(downloader::download(self.version.clone(), self.mods.clone()), Self::Message::DownloadComplete)
+            return Command::perform(downloader::download(self.version.clone(), self.os.clone(), self.mods.clone()), Self::Message::DownloadComplete)
         } else {
             return Command::none()
         }

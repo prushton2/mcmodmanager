@@ -5,10 +5,17 @@ use json;
 use std::fs;
 use std::env;
 use std::io::{copy, Write};
+use dirs;
 
 pub struct ModInfo<'a> {
     slug: &'a str,
     dependencies: Vec<&'a str>, //[String; 8]
+}
+
+#[derive(Clone)]
+pub struct Directories<'a> {
+    seperator: char,
+    minecraft_dir: &'a str,
 }
 
 pub static MODS: phf::Map<&str, ModInfo> = phf_map! {
@@ -24,17 +31,38 @@ pub static MODS: phf::Map<&str, ModInfo> = phf_map! {
     "MaLiLib"     => ModInfo {slug: "malilib",       dependencies: vec![]},
 };
 
-pub async fn download(version: String, mods: HashMap<String, bool>) -> Result<String, String> {
+pub static WINDOWS_DIR: Directories = Directories {
+    seperator: '\\',
+    minecraft_dir: "AppData\\Roaming\\.minecraft"
+};
+
+pub static LINUX_DIR: Directories = Directories {
+    seperator: '\\',
+    minecraft_dir: ".minecraft"
+};
+
+pub async fn download(version: String, os: String, mods: HashMap<String, bool>) -> Result<String, String> {
     let client = reqwest::blocking::Client::new();
+    let os_config: Directories;
+    let home_dir_option = dirs::home_dir().unwrap();
+    let home_dir = home_dir_option.to_str().unwrap();
 
-    let string = format!("{}/AppData/Roaming/.minecraft/mods", env::home_dir().unwrap().display());
-    let mods_dir = fs::create_dir_all(string.clone());
 
+    match os.as_str() {
+        "Windows" => os_config = WINDOWS_DIR.clone(),
+        "Linux" => os_config = LINUX_DIR.clone(),
+        _ => os_config = WINDOWS_DIR.clone()
+    }
 
-    println!("PATH HERE {}", string.clone());
+    let mods_dir = fs::create_dir_all(
+        format!("{}{}{}{}mods", 
+            &home_dir, os_config.seperator, os_config.minecraft_dir, os_config.seperator)
+    );
+
 
     if mods_dir.is_err() {
         println!("Error making directory: {:?}", mods_dir.unwrap());
+        return Err("Error making directory".to_string())
     }
 
     for (key, value) in mods.iter() {
@@ -42,47 +70,47 @@ pub async fn download(version: String, mods: HashMap<String, bool>) -> Result<St
             continue;
         }
 
-        let result = MODS.get(key);
+        let mod_result = MODS.get(key);
 
-        if result.is_none() {
+        if mod_result.is_none() {
             println!("Error with finding mod {}", key);
             continue;
         }
 
-        let info = result.unwrap();
+        let mod_info = mod_result.unwrap();
 
         let version_response = client
-            .get(format!("https://api.modrinth.com/v2/project/{}/version", info.slug))
+            .get(format!("https://api.modrinth.com/v2/project/{}/version", mod_info.slug))
             .header(reqwest::header::USER_AGENT, "github/prushton2/mcmodmanager")
             .send();
 
         let body = version_response.unwrap().text().unwrap();
-        let object = json::parse(&body).unwrap();
+        let version_object = json::parse(&body).unwrap();
         
         let mut file_index: usize = 0;
 
         loop {
-            if object[file_index]["game_versions"].contains(json::JsonValue::from(version.clone())) &&
-               object[file_index]["loaders"].contains(json::JsonValue::from("fabric")) {
+            if version_object[file_index]["game_versions"].contains(json::JsonValue::from(version.clone())) &&
+               version_object[file_index]["loaders"].contains(json::JsonValue::from("fabric")) {
                 break;
             }
             file_index += 1;
         }
 
         let file_response = client
-            .get(object[file_index]["files"][0]["url"].as_str().unwrap())
+            .get(version_object[file_index]["files"][0]["url"].as_str().unwrap())
             .header(reqwest::header::USER_AGENT, "github/prushton2/mcmodmanager")
             .send();
 
         let mut file_data = std::io::Cursor::new(file_response.unwrap().bytes().unwrap());
 
-        let file_result = fs::File::create(format!("{}/AppData/Roaming/.minecraft/mods/{}.jar", env::home_dir().unwrap().display(), info.slug));
-        
+        let file_result = fs::File::create(
+            format!("{}{}{}{}mods{}{}.jar",
+                home_dir, os_config.seperator, os_config.minecraft_dir, os_config.seperator, 
+                os_config.seperator, mod_info.slug));
+
         let mut file = file_result.unwrap();
         std::io::copy(&mut file_data, &mut file);
-
-
-        println!("{}: {:?}", info.slug, object[file_index]["files"][0]["url"] );
     }
 	
 	return Ok(String::from("returned from fn"))
