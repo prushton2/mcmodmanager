@@ -87,10 +87,11 @@ impl Application for windows::ModLoader {
                 download = true;
             },
             Self::Message::DownloadComplete(_result) => {
-                println!("Download done pog");
+                println!("Download Done");
+                self.page += 1;
             }
         };
-        self.page = max(min(self.page, 2), 0);
+        self.page = max(min(self.page, 3), 0);
 
         if download {
             return Command::perform(downloader::download(self.version.clone(), self.mods.clone()), Self::Message::DownloadComplete)
@@ -111,6 +112,7 @@ impl Application for windows::ModLoader {
             0 => selected_window = windows::base_settings(&self),
             1 => selected_window = windows::mods(&self, &downloader::MODS),
             2 => selected_window = windows::download(&self),
+            3 => selected_window = windows::done(&self),
             _ => selected_window = windows::null()
         };
         

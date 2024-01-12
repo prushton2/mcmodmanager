@@ -62,7 +62,8 @@ pub async fn download(version: String, mods: HashMap<String, bool>) -> Result<St
         let mut file_index: usize = 0;
 
         loop {
-            if object[file_index]["game_versions"].contains(json::JsonValue::from(version.clone())) {
+            if object[file_index]["game_versions"].contains(json::JsonValue::from(version.clone())) &&
+               object[file_index]["loaders"].contains(json::JsonValue::from("fabric")) {
                 break;
             }
             file_index += 1;
@@ -83,18 +84,6 @@ pub async fn download(version: String, mods: HashMap<String, bool>) -> Result<St
 
         println!("{}: {:?}", info.slug, object[file_index]["files"][0]["url"] );
     }
-
 	
-	println!("Download done");
-
-
-	// if response.is_err() {
-	// 	return Err(String::from("Bad Request"));
-	// }
-	
-	// // let body = response?.text().await?;
-
-	// println!("body: {:?}", response);
-
 	return Ok(String::from("returned from fn"))
 }
