@@ -3,8 +3,6 @@ use phf::{phf_map};
 use std::collections::HashMap;
 use json;
 use std::fs;
-use std::env;
-use std::io::{copy, Write};
 use dirs;
 
 pub struct ModInfo<'a> {
@@ -110,8 +108,8 @@ pub async fn download(version: String, os: String, mods: HashMap<String, bool>) 
                 os_config.seperator, mod_info.slug));
 
         let mut file = file_result.unwrap();
-        std::io::copy(&mut file_data, &mut file);
+        let _ = std::io::copy(&mut file_data, &mut file);
     }
 	
-	return Ok(String::from("returned from fn"))
+	return Ok(String::from("Operation completed"))
 }
