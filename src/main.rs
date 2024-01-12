@@ -81,7 +81,6 @@ impl Application for windows::ModLoader {
                 save_state(&self);
             },
             Self::Message::SetMod(state, mod_name) => {
-                println!("state: {}, {}", state, mod_name);
                 self.mods.insert(mod_name, state);
             },
             Self::Message::ConfirmDownload => {
@@ -94,8 +93,7 @@ impl Application for windows::ModLoader {
         self.page = max(min(self.page, 2), 0);
 
         if download {
-            println!("Downloading");
-            return Command::perform(downloader::download(self.mods.clone()), Self::Message::DownloadComplete)
+            return Command::perform(downloader::download(self.version.clone(), self.mods.clone()), Self::Message::DownloadComplete)
         } else {
             return Command::none()
         }

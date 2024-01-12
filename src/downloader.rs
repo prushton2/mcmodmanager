@@ -1,6 +1,10 @@
 use reqwest;
 use phf::{phf_map};
 use std::collections::HashMap;
+use json;
+use std::fs;
+use std::env;
+
 
 pub struct ModInfo<'a> {
     slug: &'a str,
@@ -20,11 +24,8 @@ pub static MODS: phf::Map<&str, ModInfo> = phf_map! {
     "MaLiLib"     => ModInfo {slug: "malilib",       dependencies: vec![]},
 };
 
-pub async fn download(mods: HashMap<String, bool>) -> Result<String, String> {
-	println!("Starting download");
- 
-    let mut client = reqwest::blocking::Client::new();
-    // client.header(reqwest::header::USER_AGENT, "github/prushton2/mcmodmanager");
+pub async fn download(version: String, mods: HashMap<String, bool>) -> Result<String, String> {
+    let client = reqwest::blocking::Client::new();
 
     for (key, value) in mods.iter() {
         if !value {
@@ -39,17 +40,36 @@ pub async fn download(mods: HashMap<String, bool>) -> Result<String, String> {
         }
 
         let info = result.unwrap();
-        let url: String = format!("https:://api.modrinth.com/v2/project/{}/version",  info.slug);
 
-
-
-        let response = client
+        let version_response = client
             .get(format!("https://api.modrinth.com/v2/project/{}/version", info.slug))
             .header(reqwest::header::USER_AGENT, "github/prushton2/mcmodmanager")
             .send();
-        // let body = response?.text().unwrap();
+
+        let body = version_response.unwrap().text().unwrap();
+        let object = json::parse(&body).unwrap();
         
-        println!("{}: {:?}", info.slug, response);
+        let mut file_index: usize = 0;
+
+        loop {
+            if object[file_index]["game_versions"].contains(json::JsonValue::from(version.clone())) {
+                break;
+            }
+            file_index += 1;
+        }
+
+        let file_response = client
+            .get(object[file_index]["files"][0]["url"].as_str().unwrap())
+            .header(reqwest::header::USER_AGENT, "github/prushton2/mcmodmanager")
+            .send();
+
+        let file_data = file_response.unwrap().text().unwrap();
+
+        let result = fs::File::create(format!("{}/{}.jar", env::home_dir().unwrap().display(), info.slug));
+
+        println!("{:?}", result);
+
+        println!("{}: {:?}", info.slug, object[file_index]["files"][0]["url"] );
     }
 
 	
