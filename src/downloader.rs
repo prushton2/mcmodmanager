@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use json;
 use std::fs;
 use std::env;
-
+use std::io::{copy, Write};
 
 pub struct ModInfo<'a> {
     slug: &'a str,
@@ -26,6 +26,16 @@ pub static MODS: phf::Map<&str, ModInfo> = phf_map! {
 
 pub async fn download(version: String, mods: HashMap<String, bool>) -> Result<String, String> {
     let client = reqwest::blocking::Client::new();
+
+    let string = format!("{}/AppData/Roaming/.minecraft/mods", env::home_dir().unwrap().display());
+    let mods_dir = fs::create_dir_all(string.clone());
+
+
+    println!("PATH HERE {}", string.clone());
+
+    if mods_dir.is_err() {
+        println!("Error making directory: {:?}", mods_dir.unwrap());
+    }
 
     for (key, value) in mods.iter() {
         if !value {
@@ -63,11 +73,13 @@ pub async fn download(version: String, mods: HashMap<String, bool>) -> Result<St
             .header(reqwest::header::USER_AGENT, "github/prushton2/mcmodmanager")
             .send();
 
-        let file_data = file_response.unwrap().text().unwrap();
+        let mut file_data = std::io::Cursor::new(file_response.unwrap().bytes().unwrap());
 
-        let result = fs::File::create(format!("{}/{}.jar", env::home_dir().unwrap().display(), info.slug));
+        let file_result = fs::File::create(format!("{}/AppData/Roaming/.minecraft/mods/{}.jar", env::home_dir().unwrap().display(), info.slug));
+        
+        let mut file = file_result.unwrap();
+        std::io::copy(&mut file_data, &mut file);
 
-        println!("{:?}", result);
 
         println!("{}: {:?}", info.slug, object[file_index]["files"][0]["url"] );
     }
