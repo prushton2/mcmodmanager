@@ -1,6 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
-use iced::widget::{container, text, button, column, row};
+use iced::widget::{container, text, button, column, row, Column, Row};
 use iced::{Application, Settings, Renderer, executor, Theme, Command};
 use iced::alignment::{Horizontal, Vertical};
 use iced::Length;
@@ -46,17 +46,17 @@ impl Application for windows::ModLoader {
             };
         }
 
-        let mut hm: HashMap<String, bool> = HashMap::new();
+        // let mut hm: HashMap<String, bool> = HashMap::new();
 
-        for (key, _value) in downloader::MODS.entries.iter() {
-            hm.insert(key.to_string(), false);
-        }
+        // for (key, _value) in downloader::MODS.entries.iter() {
+        //     hm.insert(key.to_string(), false);
+        // }
 
         return (Self {
             page: 0,
             os: config.os,
             version: config.version,
-            mods: hm
+            mods: HashMap::new()
         }, Command::none())
     }
 
@@ -101,27 +101,58 @@ impl Application for windows::ModLoader {
 
     fn view(&self) -> iced::Element<'_, Self::Message> {
         
-        let next: iced::widget::Button<'_, Self::Message, Renderer> = button("Back").on_press(Self::Message::Previous);
-        let prev: iced::widget::Button<'_, Self::Message, Renderer> = button("Next").on_press(Self::Message::Next);
-        
+        struct ButtonConfig<'a> {
+            next_name: &'a str,
+            prev_name: &'a str,
+            show_next: bool,
+            show_prev: bool
+        }
+
+        let mut button_config: ButtonConfig = ButtonConfig {
+            next_name: "Next",
+            prev_name: "Back",
+            show_next: true,
+            show_prev: true
+        };
+
         let selected_window;
-
-
+        
         match self.page {
             0 => selected_window = windows::base_settings(&self),
-            1 => selected_window = windows::mods(&self, &downloader::MODS),
-            2 => selected_window = windows::download(&self),
+            1 => {
+                selected_window = windows::mods(&self, &downloader::MODS);
+                button_config.next_name = "Download";
+            },
+            2 => {
+                selected_window = windows::download(&self);
+                button_config.show_next = false;
+            },
             3 => selected_window = windows::done(&self),
             _ => selected_window = windows::null()
         };
+
+
+        let next: iced::widget::Button<'_, Self::Message, Renderer> = button(button_config.next_name).on_press(Self::Message::Next);
+        let prev: iced::widget::Button<'_, Self::Message, Renderer> = button(button_config.prev_name).on_press(Self::Message::Previous);
         
-        let element = column![
+        let mut buttons: Vec<iced::Element<'_, Self::Message, Renderer>> = vec![];
+
+        if button_config.show_prev {
+            buttons.push(prev.into());
+        }
+        if button_config.show_next {
+            buttons.push(next.into());
+        }
+
+
+        let mut elements = column![
             selected_window,
             text("\n\n"),
-            container(row![next, prev]).align_x(Horizontal::Right).align_y(Vertical::Bottom)
+            // container().into(),
+            Row::with_children(buttons)
         ];
 
-        return container(element).height(Length::Fill).width(Length::Fill).into()
+        return container(elements).into()
         
     }
 

@@ -22,6 +22,8 @@ pub static MODS: phf::Map<&str, ModInfo> = phf_map! {
     "Carpet"      => ModInfo {slug: "carpet",            dependencies: vec![]},
     "Audioplayer" => ModInfo {slug: "audioplayer",       dependencies: vec![]},
     "Voice Chat"  => ModInfo {slug: "simple-voice-chat", dependencies: vec![]},
+    "WorldEdit"   => ModInfo {slug: "worldedit",         dependencies: vec![]},
+
     // "MiniHud"     => ModInfo {slug: "minihud",           dependencies: vec![]},
     // "Tweakeroo"   => ModInfo {slug: "tweakeroo",         dependencies: vec![]},
     
@@ -112,4 +114,22 @@ pub async fn download(version: String, os: String, mods: HashMap<String, bool>) 
     }
 	
 	return Ok(String::from("Operation completed"))
+}
+
+
+
+pub fn get_installed_mods(os: String) -> HashMap<String, bool> {
+    let home_dir_option = dirs::home_dir().unwrap();
+    let home_dir = home_dir_option.to_str().unwrap();
+    let os_config: Directories;
+
+    match os.as_str() {
+        "Windows" => os_config = WINDOWS_DIR.clone(),
+        "Linux" => os_config = LINUX_DIR.clone(),
+        _ => os_config = WINDOWS_DIR.clone()
+    }
+
+    
+
+
 }
