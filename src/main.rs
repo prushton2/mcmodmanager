@@ -46,17 +46,17 @@ impl Application for windows::ModLoader {
             };
         }
 
-        // let mut hm: HashMap<String, bool> = HashMap::new();
+        let mut hm: HashMap<String, bool> = HashMap::new();
 
-        // for (key, _value) in downloader::MODS.entries.iter() {
-        //     hm.insert(key.to_string(), false);
-        // }
+        for (key, _value) in downloader::MODS.entries.iter() {
+            hm.insert(key.to_string(), false);
+        }
 
         return (Self {
             page: 0,
             os: config.os,
             version: config.version,
-            mods: HashMap::new()
+            mods: hm
         }, Command::none())
     }
 
@@ -67,11 +67,18 @@ impl Application for windows::ModLoader {
     fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
         
         let mut download = false;
-        
-        match message {
-            Self::Message::Next => self.page += 1,
-            Self::Message::Previous => self.page -= 1,
+        let mut pageinit = false; //kinda gross, used to make sure actions that should run
+        //on page init run once
 
+        match message {
+            Self::Message::Next => {
+                self.page += 1;
+                pageinit = true;
+            },
+            Self::Message::Previous => {
+                self.page -= 1;
+                pageinit = true;
+            },
             Self::Message::VersionSet(state) => {
                 self.version = state;
                 save_state(&self);
@@ -90,7 +97,11 @@ impl Application for windows::ModLoader {
                 self.page += 1;
             }
         };
-        self.page = max(min(self.page, 3), 0);
+        self.page = max(min(self.page, 4), 0);
+
+        if self.page == 1 && pageinit {
+            self.mods = downloader::get_installed_mods(self.os.clone()).clone();
+        }
 
         if download {
             return Command::perform(downloader::download(self.version.clone(), self.os.clone(), self.mods.clone()), Self::Message::DownloadComplete)
@@ -116,7 +127,7 @@ impl Application for windows::ModLoader {
         };
 
         let selected_window;
-        
+
         match self.page {
             0 => selected_window = windows::base_settings(&self),
             1 => {
@@ -127,7 +138,10 @@ impl Application for windows::ModLoader {
                 selected_window = windows::download(&self);
                 button_config.show_next = false;
             },
-            3 => selected_window = windows::done(&self),
+            3 => {
+                selected_window = windows::done(&self);
+                button_config.next_name = "Finish";
+            }
             _ => selected_window = windows::null()
         };
 
@@ -144,11 +158,9 @@ impl Application for windows::ModLoader {
             buttons.push(next.into());
         }
 
-
         let mut elements = column![
             selected_window,
             text("\n\n"),
-            // container().into(),
             Row::with_children(buttons)
         ];
 

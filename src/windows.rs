@@ -55,6 +55,8 @@ pub fn mods<'a>(this: &ModLoader, mods: &phf::Map<&str, downloader::ModInfo<'a>>
 
 
     for (key, _val) in mods.entries.iter() {
+        // let x = ;
+        // println!("{}", x);
         elements.push(
             checkbox(key.to_string(), *(this.mods.get(*key).unwrap()), |v| Message::SetMod(v, key.to_string())).into()
         );

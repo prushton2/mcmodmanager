@@ -66,18 +66,24 @@ pub async fn download(version: String, os: String, mods: HashMap<String, bool>) 
     }
 
     for (key, value) in mods.iter() {
-        if !value {
-            continue;
-        }
-
+        
         let mod_result = MODS.get(key);
-
+        
         if mod_result.is_none() {
             println!("Error with finding mod {}", key);
             continue;
         }
-
+        
         let mod_info = mod_result.unwrap();
+        
+        if !value {
+            let _ = fs::remove_file(
+                format!("{}{}{}{}mods{}{}.jar",
+                home_dir, os_config.seperator, os_config.minecraft_dir, os_config.seperator, 
+                os_config.seperator, mod_info.slug)
+            );
+            continue;
+        }
 
         let version_response = client
             .get(format!("https://api.modrinth.com/v2/project/{}/version", mod_info.slug))
@@ -123,13 +129,25 @@ pub fn get_installed_mods(os: String) -> HashMap<String, bool> {
     let home_dir = home_dir_option.to_str().unwrap();
     let os_config: Directories;
 
+    let mut hashmap: HashMap<String, bool> = HashMap::new();
+
     match os.as_str() {
         "Windows" => os_config = WINDOWS_DIR.clone(),
         "Linux" => os_config = LINUX_DIR.clone(),
         _ => os_config = WINDOWS_DIR.clone()
+    };
+
+    for (key, value) in MODS.entries.iter() {
+
+        hashmap.insert(
+            key.to_string(), 
+            fs::metadata(
+                format!("{}{}{}{}mods{}{}.jar",
+                home_dir, os_config.seperator, os_config.minecraft_dir, os_config.seperator,
+                os_config.seperator, value.slug)).is_ok()
+            );
+
     }
 
-    
-
-
+    return hashmap
 }
