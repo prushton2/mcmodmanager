@@ -1,11 +1,10 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
-use iced::widget::{container, text, button, column, row, Column, Row};
+use iced::widget::{container, text, button, column, Row};
 use iced::{Application, Settings, Renderer, executor, Theme, Command};
-use iced::alignment::{Horizontal, Vertical};
-use iced::Length;
 
 use std::collections::HashMap;
+use std::process::exit;
 
 // use tokio::time::{sleep, Duration};
 
@@ -66,9 +65,8 @@ impl Application for windows::ModLoader {
 
     fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
         
-        let mut download = false;
-        let mut pageinit = false; //kinda gross, used to make sure actions that should run
-        //on page init run once
+        let mut pageinit = false; 
+        //kinda gross, used to make sure actions that should run on page init run once
 
         match message {
             Self::Message::Next => {
@@ -90,9 +88,6 @@ impl Application for windows::ModLoader {
             Self::Message::SetMod(state, mod_name) => {
                 self.mods.insert(mod_name, state);
             },
-            Self::Message::ConfirmDownload => {
-                download = true;
-            },
             Self::Message::DownloadComplete(_result) => {
                 self.page += 1;
             }
@@ -103,7 +98,7 @@ impl Application for windows::ModLoader {
             self.mods = downloader::get_installed_mods(self.os.clone()).clone();
         }
 
-        if download {
+        if self.page == 2 {
             return Command::perform(downloader::download(self.version.clone(), self.os.clone(), self.mods.clone()), Self::Message::DownloadComplete)
         } else {
             return Command::none()
@@ -137,10 +132,15 @@ impl Application for windows::ModLoader {
             2 => {
                 selected_window = windows::download(&self);
                 button_config.show_next = false;
+                button_config.show_prev = false;
             },
             3 => {
                 selected_window = windows::done(&self);
+                button_config.show_prev = false;
                 button_config.next_name = "Finish";
+            }
+            4 => {
+                exit(0);
             }
             _ => selected_window = windows::null()
         };
@@ -158,7 +158,7 @@ impl Application for windows::ModLoader {
             buttons.push(next.into());
         }
 
-        let mut elements = column![
+        let elements = column![
             selected_window,
             text("\n\n"),
             Row::with_children(buttons)

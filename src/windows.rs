@@ -9,12 +9,8 @@ pub enum Message {
     Previous,
     
 	VersionSet(String),
-
 	SetOS(String),
-	
 	SetMod(bool, String),
-
-    ConfirmDownload,
     DownloadComplete(Result<String, String>)
 }
 
@@ -46,8 +42,6 @@ pub fn base_settings(this: &ModLoader) -> iced::Element<'_, Message> {
 
 pub fn mods<'a>(this: &ModLoader, mods: &phf::Map<&str, downloader::ModInfo<'a>>) -> iced::Element<'a, Message> {
 	
-
-        
     let mut elements: Vec<iced::Element<'_, Message, iced::Renderer>> = vec![];
     elements.push(
         text("Select Mods:\n").into()
@@ -55,8 +49,6 @@ pub fn mods<'a>(this: &ModLoader, mods: &phf::Map<&str, downloader::ModInfo<'a>>
 
 
     for (key, _val) in mods.entries.iter() {
-        // let x = ;
-        // println!("{}", x);
         elements.push(
             checkbox(key.to_string(), *(this.mods.get(*key).unwrap()), |v| Message::SetMod(v, key.to_string())).into()
         );
@@ -70,7 +62,7 @@ pub fn mods<'a>(this: &ModLoader, mods: &phf::Map<&str, downloader::ModInfo<'a>>
 pub fn download(_this: &ModLoader) -> iced::Element<'_, Message> {
 	
     let element = column![
-		button("Download").on_press(Message::ConfirmDownload)
+		text("Downloading and removing mods...")
 	];
 
 	return container(element).into()
