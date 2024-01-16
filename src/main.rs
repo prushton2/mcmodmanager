@@ -10,7 +10,6 @@ use std::process::exit;
 
 use std::cmp::{min, max};
 
-mod file;
 mod windows;
 mod downloader;
 
@@ -33,18 +32,6 @@ impl Application for windows::ModLoader {
 
     fn new(_flags: Self::Flags) -> (Self, Command<Self::Message>) {
 
-        let load_result = file::load_config(FILE_PATH);
-        let config: file::Config;
-
-        if load_result.is_ok() {
-            config = load_result.unwrap();
-        } else {
-            config = file::Config {
-                os: String::from("windows"),
-                version: String::from(""),
-            };
-        }
-
         let mut hm: HashMap<String, bool> = HashMap::new();
 
         for (key, _value) in downloader::MODS.entries.iter() {
@@ -53,8 +40,8 @@ impl Application for windows::ModLoader {
 
         return (Self {
             page: 0,
-            os: config.os,
-            version: config.version,
+            os: "".to_string(),
+            version: "".to_string(),
             mods: hm
         }, Command::none())
     }
@@ -79,11 +66,9 @@ impl Application for windows::ModLoader {
             },
             Self::Message::VersionSet(state) => {
                 self.version = state;
-                save_state(&self);
             },
             Self::Message::SetOS(state) => {
                 self.os = state;
-                save_state(&self);
             },
             Self::Message::SetMod(state, mod_name) => {
                 self.mods.insert(mod_name, state);
@@ -168,13 +153,4 @@ impl Application for windows::ModLoader {
         
     }
 
-}
-
-fn save_state(this: &windows::ModLoader) {
-    let config: file::Config = file::Config {
-        os: this.os.clone(),
-        version: this.version.clone()
-    };
-
-    let _ = file::write_config(FILE_PATH, config);
 }

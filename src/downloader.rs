@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use json;
 use std::fs;
 use dirs;
+use regex::Regex;
 
 pub struct ModInfo<'a> {
     slug: &'a str,
@@ -37,16 +38,17 @@ pub static WINDOWS_DIR: Directories = Directories {
 };
 
 pub static LINUX_DIR: Directories = Directories {
-    seperator: '\\',
+    seperator: '/',
     minecraft_dir: ".minecraft"
 };
+
+pub static FABRIC_URL: &str = "https:;//maven.fabricmc.net/net/fabricmc/fabric-installer/1.0.0/fabric-installer-1.0.0.jar";
 
 pub async fn download(version: String, os: String, mods: HashMap<String, bool>) -> Result<String, String> {
     let client = reqwest::blocking::Client::new();
     let os_config: Directories;
     let home_dir_option = dirs::home_dir().unwrap();
     let home_dir = home_dir_option.to_str().unwrap();
-
 
     match os.as_str() {
         "Windows" => os_config = WINDOWS_DIR.clone(),
@@ -150,4 +152,33 @@ pub fn get_installed_mods(os: String) -> HashMap<String, bool> {
     }
 
     return hashmap
+}
+
+pub fn has_fabric_installed(os: String, version: String) -> Result<bool, &'static str> {
+    let home_dir_option = dirs::home_dir().unwrap();
+    let home_dir = home_dir_option.to_str().unwrap();
+    let os_config: Directories;
+
+    match os.as_str() {
+        "Windows" => os_config = WINDOWS_DIR.clone(),
+        "Linux" => os_config = LINUX_DIR.clone(),
+        _ => os_config = WINDOWS_DIR.clone()
+    };
+
+    let versions_result = fs::read_dir(
+        format!("{}{}{}{}versions{}",
+                home_dir, os_config.seperator, os_config.minecraft_dir, os_config.seperator,
+                os_config.seperator));
+
+    if versions_result.is_err() {
+        return Err("Error finding versions");
+    }
+    let versions = versions_result.unwrap();
+
+    for path in versions {
+        println!("PATH: {:?}", path);
+    }
+
+
+    return Ok(true);
 }

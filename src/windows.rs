@@ -68,6 +68,12 @@ pub fn download(_this: &ModLoader) -> iced::Element<'_, Message> {
 	return container(element).into()
 }
 
+// pub fn downloadFabric(this: &ModLoader) -> iced::Element<'_, Message> {
+
+
+
+// }
+
 pub fn done(_this: &ModLoader) -> iced::Element<'_, Message> {
 
     return text("Mod download is done. Now install fabric with this link: https://fabricmc.net/").into()
