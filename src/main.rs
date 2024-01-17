@@ -73,7 +73,10 @@ impl Application for windows::ModLoader {
             Self::Message::SetMod(state, mod_name) => {
                 self.mods.insert(mod_name, state);
             },
-            Self::Message::DownloadComplete(_result) => {
+            Self::Message::DownloadComplete(result) => {
+                if result.is_err() {
+                    println!("{:?}", result.err());
+                }
                 self.page += 1;
             }
         };

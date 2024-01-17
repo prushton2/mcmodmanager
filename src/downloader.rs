@@ -42,7 +42,7 @@ pub static LINUX_DIR: Directories = Directories {
     minecraft_dir: ".minecraft"
 };
 
-pub static FABRIC_URL: &str = "https:;//maven.fabricmc.net/net/fabricmc/fabric-installer/1.0.0/fabric-installer-1.0.0.jar";
+pub static FABRIC_URL: &str = "https://maven.fabricmc.net/net/fabricmc/fabric-installer/1.0.0/fabric-installer-1.0.0.jar";
 
 pub async fn download(version: String, os: String, mods: HashMap<String, bool>) -> Result<String, String> {
     let client = reqwest::blocking::Client::new();
@@ -63,8 +63,8 @@ pub async fn download(version: String, os: String, mods: HashMap<String, bool>) 
 
 
     if mods_dir.is_err() {
-        println!("Error making directory: {:?}", mods_dir.unwrap());
-        return Err("Error making directory".to_string())
+        println!("Error making directory: {:?}", mods_dir.err());
+        return Err("Error making mods directory".to_string())
     }
 
     for (key, value) in mods.iter() {
