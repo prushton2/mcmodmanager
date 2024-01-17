@@ -123,6 +123,15 @@ impl Application for windows::ModLoader {
                 button_config.show_prev = false;
             },
             3 => {
+                let has_fabric_result = downloader::has_fabric_installed(self.os.clone(), self.version.clone());
+                selected_window = windows::downloadFabric(&self,has_fabric_result);
+                if has_fabric_result.is_ok() {
+                    if !has_fabric_result.unwrap() {
+                        button_config.show_next = false;
+                    }
+                }
+            },
+            4 => {
                 selected_window = windows::done(&self);
                 button_config.show_prev = false;
                 button_config.next_name = "Finish";

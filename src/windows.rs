@@ -11,7 +11,9 @@ pub enum Message {
 	VersionSet(String),
 	SetOS(String),
 	SetMod(bool, String),
-    DownloadComplete(Result<String, String>)
+    DownloadComplete(Result<String, String>),
+
+    InstallFabric
 }
 
 pub struct ModLoader {
@@ -68,13 +70,36 @@ pub fn download(_this: &ModLoader) -> iced::Element<'_, Message> {
 	return container(element).into()
 }
 
-// pub fn downloadFabric(this: &ModLoader) -> iced::Element<'_, Message> {
+pub fn downloadFabric(this: &ModLoader, has_fabric: Result<bool, &str>) -> iced::Element<'_, Message> {
 
+    let fabric_found = column![
+        text("Fabric was found on your system.")
+    ];
 
+    let fabric_not_found = column![
+        text("Fabric was not found on your system"),
+        button("windows").on_press(Message::InstallFabric)
+    ];
 
-// }
+    let fabric_err = column![
+        text("There was an error locating fabric"),
+    ];
+
+    if has_fabric.is_err() {
+        return fabric_err.into();
+    }
+
+    if has_fabric.unwrap() {
+        return fabric_found.into();
+    }
+
+    return fabric_not_found;
+}
 
 pub fn done(_this: &ModLoader) -> iced::Element<'_, Message> {
 
     return text("Mod download is done. Now install fabric with this link: https://fabricmc.net/").into()
+
+
+
 }

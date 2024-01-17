@@ -24,7 +24,11 @@ pub static MODS: phf::Map<&str, ModInfo> = phf_map! {
     "Audioplayer" => ModInfo {slug: "audioplayer",       dependencies: vec![]},
     "Voice Chat"  => ModInfo {slug: "simple-voice-chat", dependencies: vec![]},
     "WorldEdit"   => ModInfo {slug: "worldedit",         dependencies: vec![]},
+    "Nvidium"     => ModInfo {slug: "nvidium",           dependencies: vec![]},
+    "Bobby"       => ModInfo {slug: "bobby",             dependencies: vec![]},
+    "ModMenu"     => ModInfo {slug: "modmenu",           dependencies: vec![]},
 
+    // please put these on modrinth please please please
     // "MiniHud"     => ModInfo {slug: "minihud",           dependencies: vec![]},
     // "Tweakeroo"   => ModInfo {slug: "tweakeroo",         dependencies: vec![]},
     
@@ -184,6 +188,7 @@ pub fn has_fabric_installed(os: String, version: String) -> Result<bool, &'stati
         println!("PATH: {:?}", path);
     }
 
+    
 
     return Ok(true);
 }
