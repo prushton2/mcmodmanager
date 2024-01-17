@@ -184,7 +184,6 @@ pub fn has_fabric_installed(os: String, version: String) -> Result<bool, String>
     }
     let versions = versions_result.unwrap();
 
-
     let re = Regex::new(
         format!(r"fabric-loader-[0-9]*\.[0-9]*\.[0-9]*-{}", version).as_str()
     ).unwrap();
@@ -198,4 +197,31 @@ pub fn has_fabric_installed(os: String, version: String) -> Result<bool, String>
     }
 
     return Ok(false);
+}
+
+pub async fn download_fabric(os: String) -> Result<&'static str, &'static str> {
+    let home_dir_option = dirs::home_dir().unwrap();
+    let home_dir = home_dir_option.to_str().unwrap();
+ 
+    let client = reqwest::blocking::Client::new();
+
+    let fabric_response = client
+        .get(FABRIC_URL)
+        .header(reqwest::header::USER_AGENT, "github/prushton2/mcmodmanager")
+        .send();
+
+    if fabric_response.is_err() {
+        return Err("Could not download fabric: {}", fabric_response.err())
+    }
+
+    let fabric = fabric_response.unwrap();
+
+    let mut file_data = std::io::Cursor::new(fabric.bytes().unwrap());
+
+    fs::File::create(format!("{}/fabric.jar", home_dir));
+
+    let mut file = file_result.unwrap();
+    let _ = std::io::copy(&mut file_data, &mut file);
+
+    return Ok("Ok");
 }

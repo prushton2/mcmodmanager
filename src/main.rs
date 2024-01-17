@@ -54,6 +54,7 @@ impl Application for windows::ModLoader {
         
         let mut pageinit = false; 
         //kinda gross, used to make sure actions that should run on page init run once
+        let mut command = Command::none();
 
         match message {
             Self::Message::ChangePage(pages) => {
@@ -75,7 +76,7 @@ impl Application for windows::ModLoader {
                 }
                 self.page += 1;
             },
-            Self::Message::InstallFabric => {
+            Self::Message::LaunchFabric(_result) => {
 
             }
         };
@@ -85,11 +86,13 @@ impl Application for windows::ModLoader {
             self.mods = downloader::get_installed_mods(self.os.clone()).clone();
         }
 
-        if self.page == 2 {
-            return Command::perform(downloader::download(self.version.clone(), self.os.clone(), self.mods.clone()), Self::Message::DownloadComplete)
-        } else {
-            return Command::none()
+        match self.page {
+            2 => command = Command::perform(downloader::download(self.version.clone(), self.os.clone(), self.mods.clone()), Self::Message::DownloadComplete),
+            4 => command = Command::perform(downloader::download_fabric(self.os.clone()), Self::Message::LaunchFabric),
+            _ => command = Command::none(),
         }
+
+        return command;
     }
 
     fn view(&self) -> iced::Element<'_, Self::Message> {
@@ -128,21 +131,19 @@ impl Application for windows::ModLoader {
             3 => {
                 let has_fabric_result = downloader::has_fabric_installed(self.os.clone(), self.version.clone());
 
-                selected_window = windows::download_fabric(&self, has_fabric_result.clone());
-
-                button_config.next_page = 2;
+                selected_window = windows::find_fabric(&self, has_fabric_result.clone());
 
                 if has_fabric_result.is_ok() {
                     if !has_fabric_result.clone().unwrap() {
-                        button_config.show_next = false;
+                        button_config.next_name = "Install Fabric";
+                    } else {
+                        button_config.next_page = 2;
                     }
                 }
 
             },
             4 => {
-                selected_window = windows::done(&self);
-                button_config.show_prev = false;
-                button_config.next_name = "Finish";
+                selected_window = windows::install_fabric(&self);
             }
             5 => {
                 selected_window = windows::null();

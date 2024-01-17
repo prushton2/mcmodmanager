@@ -12,7 +12,7 @@ pub enum Message {
 	SetMod(bool, String),
     DownloadComplete(Result<String, String>),
 
-    InstallFabric
+    LaunchFabric(Result<&'static str, &'static str>),
 }
 
 pub struct ModLoader {
@@ -69,7 +69,7 @@ pub fn download(_this: &ModLoader) -> iced::Element<'_, Message> {
 	return container(element).into()
 }
 
-pub fn download_fabric<'a>(this: &'a ModLoader, has_fabric: Result<bool, String>) -> iced::Element<'a, Message> {
+pub fn find_fabric<'a>(this: &'a ModLoader, has_fabric: Result<bool, String>) -> iced::Element<'a, Message> {
 
     let fabric_found = column![
         text("Fabric was found on your system.")
@@ -77,7 +77,7 @@ pub fn download_fabric<'a>(this: &'a ModLoader, has_fabric: Result<bool, String>
 
     let fabric_not_found = column![
         text("Fabric was not found on your system"),
-        button("Install Fabric").on_press(Message::InstallFabric)
+        // button("Install Fabric").on_press(Message::ChangePage(1))
     ];
 
     if has_fabric.is_err() {
@@ -93,10 +93,11 @@ pub fn download_fabric<'a>(this: &'a ModLoader, has_fabric: Result<bool, String>
     return fabric_not_found.into();
 }
 
+pub fn install_fabric(this: &ModLoader) -> iced::Element<'_, Message> {
+    //we only get here if fabric is not found
+    return text("Downloading Fabric...").into();
+}
+
 pub fn done(_this: &ModLoader) -> iced::Element<'_, Message> {
-
     return text("Mod download is done. Now install fabric with this link: https://fabricmc.net/").into()
-
-
-
 }
