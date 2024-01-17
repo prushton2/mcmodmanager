@@ -30,8 +30,8 @@ pub fn base_settings(this: &ModLoader) -> iced::Element<'_, Message> {
 		text("Select your operating system:\n\n"),
 		text(format!("Selected OS: {}", this.os)),
 		row![
-            button("windows").on_press(Message::SetOS(String::from("windows"))), 
-            button("linux").on_press(Message::SetOS(String::from("linux")))],
+            button("windows").on_press(Message::SetOS(String::from("Windows"))), 
+            button("linux").on_press(Message::SetOS(String::from("Linux")))],
 	
 		text("\n\nSelect your game version:"),
 		text_input("1.20.4", &this.version).on_input(Message::VersionSet)	
