@@ -163,7 +163,7 @@ pub fn get_installed_mods(os: String) -> HashMap<String, bool> {
     return hashmap
 }
 
-pub fn has_fabric_installed(os: String, version: String) -> Result<bool, &'static str> {
+pub fn has_fabric_installed(os: String, version: String) -> Result<bool, String> {
     let home_dir_option = dirs::home_dir().unwrap();
     let home_dir = home_dir_option.to_str().unwrap();
     let os_config: Directories;
@@ -180,15 +180,22 @@ pub fn has_fabric_installed(os: String, version: String) -> Result<bool, &'stati
                 os_config.seperator));
 
     if versions_result.is_err() {
-        return Err("Error finding versions");
+        return Err(format!("Error finding versions: {:?}", versions_result.err()));
     }
     let versions = versions_result.unwrap();
 
+
+    let re = Regex::new(
+        format!(r"fabric-loader-[0-9]*\.[0-9]*\.[0-9]*-{}", version).as_str()
+    ).unwrap();
+
     for path in versions {
-        println!("PATH: {:?}", path);
+        let path_string = path.unwrap().file_name().into_string().unwrap();
+        
+        if re.is_match(&path_string) {
+            return Ok(true);
+        }
     }
 
-    
-
-    return Ok(true);
+    return Ok(false);
 }

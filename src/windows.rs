@@ -5,8 +5,7 @@ use crate::downloader;
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    Next,
-    Previous,
+    ChangePage(i32),
     
 	VersionSet(String),
 	SetOS(String),
@@ -17,7 +16,7 @@ pub enum Message {
 }
 
 pub struct ModLoader {
-    pub page: i64,
+    pub page: i32,
     pub os: String,
 	pub version: String,
 	pub mods: HashMap<String, bool>
@@ -70,7 +69,7 @@ pub fn download(_this: &ModLoader) -> iced::Element<'_, Message> {
 	return container(element).into()
 }
 
-pub fn downloadFabric(this: &ModLoader, has_fabric: Result<bool, &str>) -> iced::Element<'_, Message> {
+pub fn download_fabric<'a>(this: &'a ModLoader, has_fabric: Result<bool, String>) -> iced::Element<'a, Message> {
 
     let fabric_found = column![
         text("Fabric was found on your system.")
@@ -78,22 +77,20 @@ pub fn downloadFabric(this: &ModLoader, has_fabric: Result<bool, &str>) -> iced:
 
     let fabric_not_found = column![
         text("Fabric was not found on your system"),
-        button("windows").on_press(Message::InstallFabric)
-    ];
-
-    let fabric_err = column![
-        text("There was an error locating fabric"),
+        button("Install Fabric").on_press(Message::InstallFabric)
     ];
 
     if has_fabric.is_err() {
-        return fabric_err.into();
+        return column![
+            text(format!("Error locating fabric: {:?}", has_fabric.err()))
+        ].into();
     }
 
-    if has_fabric.unwrap() {
+    if has_fabric.clone().unwrap() {
         return fabric_found.into();
     }
 
-    return fabric_not_found;
+    return fabric_not_found.into();
 }
 
 pub fn done(_this: &ModLoader) -> iced::Element<'_, Message> {

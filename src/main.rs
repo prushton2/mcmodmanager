@@ -56,14 +56,10 @@ impl Application for windows::ModLoader {
         //kinda gross, used to make sure actions that should run on page init run once
 
         match message {
-            Self::Message::Next => {
-                self.page += 1;
+            Self::Message::ChangePage(pages) => {
+                self.page += pages;
                 pageinit = true;
-            },
-            Self::Message::Previous => {
-                self.page -= 1;
-                pageinit = true;
-            },
+            }
             Self::Message::VersionSet(state) => {
                 self.version = state;
             },
@@ -78,9 +74,12 @@ impl Application for windows::ModLoader {
                     println!("{:?}", result.err());
                 }
                 self.page += 1;
+            },
+            Self::Message::InstallFabric => {
+
             }
         };
-        self.page = max(min(self.page, 4), 0);
+        self.page = max(min(self.page, 10), 0);
 
         if self.page == 1 && pageinit {
             self.mods = downloader::get_installed_mods(self.os.clone()).clone();
@@ -99,14 +98,18 @@ impl Application for windows::ModLoader {
             next_name: &'a str,
             prev_name: &'a str,
             show_next: bool,
-            show_prev: bool
+            show_prev: bool,
+            next_page: i32,
+            prev_page: i32
         }
 
         let mut button_config: ButtonConfig = ButtonConfig {
             next_name: "Next",
             prev_name: "Back",
             show_next: true,
-            show_prev: true
+            show_prev: true,
+            next_page: 1, //amount of pages to change when button is pressed
+            prev_page: -1
         };
 
         let selected_window;
@@ -124,27 +127,33 @@ impl Application for windows::ModLoader {
             },
             3 => {
                 let has_fabric_result = downloader::has_fabric_installed(self.os.clone(), self.version.clone());
-                selected_window = windows::downloadFabric(&self,has_fabric_result);
+
+                selected_window = windows::download_fabric(&self, has_fabric_result.clone());
+
+                button_config.next_page = 2;
+
                 if has_fabric_result.is_ok() {
-                    if !has_fabric_result.unwrap() {
+                    if !has_fabric_result.clone().unwrap() {
                         button_config.show_next = false;
                     }
                 }
+
             },
             4 => {
                 selected_window = windows::done(&self);
                 button_config.show_prev = false;
                 button_config.next_name = "Finish";
             }
-            4 => {
-                exit(0);
+            5 => {
+                selected_window = windows::null();
+                // exit(0);
             }
             _ => selected_window = windows::null()
         };
 
 
-        let next: iced::widget::Button<'_, Self::Message, Renderer> = button(button_config.next_name).on_press(Self::Message::Next);
-        let prev: iced::widget::Button<'_, Self::Message, Renderer> = button(button_config.prev_name).on_press(Self::Message::Previous);
+        let next: iced::widget::Button<'_, Self::Message, Renderer> = button(button_config.next_name).on_press(Self::Message::ChangePage(button_config.next_page));
+        let prev: iced::widget::Button<'_, Self::Message, Renderer> = button(button_config.prev_name).on_press(Self::Message::ChangePage(button_config.prev_page));
         
         let mut buttons: Vec<iced::Element<'_, Self::Message, Renderer>> = vec![];
 
@@ -158,6 +167,7 @@ impl Application for windows::ModLoader {
         let elements = column![
             selected_window,
             text("\n\n"),
+            text(format!("page {}\n", self.page)),
             Row::with_children(buttons)
         ];
 
