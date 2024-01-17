@@ -63,7 +63,12 @@ pub async fn download(version: String, os: String, mods: HashMap<String, bool>) 
 
 
     if mods_dir.is_err() {
-        println!("Error making directory: {:?}", mods_dir.err());
+        println!("Error making directory: {:?}\ndir: {:?}", 
+            mods_dir.err(), 
+            format!("{}{}{}{}mods", 
+                &home_dir, os_config.seperator, os_config.minecraft_dir, os_config.seperator
+            )
+        );
         return Err("Error making mods directory".to_string())
     }
 
