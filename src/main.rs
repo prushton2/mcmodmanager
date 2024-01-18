@@ -138,7 +138,7 @@ impl Application for windows::ModLoader {
                     if !has_fabric_result.clone().unwrap() {
                         button_config.next_name = "Install Fabric";
                     } else {
-                        button_config.next_page = 2;
+                        button_config.next_page = 3;
                     }
                 }
 
@@ -155,8 +155,11 @@ impl Application for windows::ModLoader {
                 selected_window = windows::launch_fabric(&self, fabric_dir.clone());
             }
             6 => {
-                selected_window = windows::null();
+                selected_window = windows::done(&self);
             },
+            7 => {
+                exit(0);
+            }
             _ => selected_window = windows::null()
         };
         
