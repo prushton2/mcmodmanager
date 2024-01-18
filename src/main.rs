@@ -132,7 +132,7 @@ impl Application for windows::ModLoader {
             3 => {
                 let has_fabric_result = downloader::has_fabric_installed(self.os.clone(), self.version.clone());
 
-                
+
                 selected_window = windows::find_fabric(&self, has_fabric_result.clone());
 
                 if has_fabric_result.is_ok() {
@@ -181,7 +181,6 @@ impl Application for windows::ModLoader {
         let elements = column![
             selected_window,
             text("\n\n"),
-            text(format!("page {}\n", self.page)),
             Row::with_children(buttons)
         ];
 
