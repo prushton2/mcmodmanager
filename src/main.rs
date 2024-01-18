@@ -60,7 +60,7 @@ impl Application for windows::ModLoader {
             Self::Message::ChangePage(pages) => {
                 self.page += pages;
                 pageinit = true;
-            }
+            },
             Self::Message::VersionSet(state) => {
                 self.version = state;
             },
@@ -80,12 +80,12 @@ impl Application for windows::ModLoader {
         self.page = max(min(self.page, 7), 0);
 
         if self.page == 1 && pageinit {
-            self.mods = downloader::get_installed_mods(self.os.clone()).clone();
+            self.mods = downloader::get_installed_mods().clone();
         }
 
         match self.page {
-            2 => command = Command::perform(downloader::download(self.version.clone(), self.os.clone(), self.mods.clone()), Self::Message::DownloadComplete),
-            4 => command = Command::perform(downloader::download_fabric(self.os.clone()), Self::Message::LaunchFabric),
+            2 => command = Command::perform(downloader::download(self.version.clone(), self.mods.clone()), Self::Message::DownloadComplete),
+            4 => command = Command::perform(downloader::download_fabric(), Self::Message::LaunchFabric),
             _ => command = Command::none(),
         }
 
@@ -126,7 +126,7 @@ impl Application for windows::ModLoader {
                 button_config.show_prev = false;
             },
             3 => {
-                let has_fabric_result = downloader::has_fabric_installed(self.os.clone(), self.version.clone());
+                let has_fabric_result = downloader::has_fabric_installed(self.version.clone());
 
 
                 selected_window = windows::find_fabric(&self, has_fabric_result.clone());
@@ -144,10 +144,10 @@ impl Application for windows::ModLoader {
                 selected_window = windows::install_fabric(&self);
             },
             5 => {
-                let home_os_config: (String, downloader::Directories) = downloader::get_home_os_config(self.os.clone());
+                let config = downloader::get_os_config().unwrap();
 
                 let fabric_dir = format!("{}{}{}{}fabric-installer.jar",
-                    home_os_config.0, home_os_config.1.seperator, home_os_config.1.minecraft_dir, home_os_config.1.seperator);
+                    config.home_dir, config.seperator, config.minecraft_dir, config.seperator);
 
                 selected_window = windows::launch_fabric(&self, fabric_dir.clone());
             }
@@ -162,8 +162,6 @@ impl Application for windows::ModLoader {
             _ => selected_window = windows::null()
         };
         
-        // exit(0);
-
         let next: iced::widget::Button<'_, Self::Message, Renderer> = button(button_config.next_name).on_press(Self::Message::ChangePage(button_config.next_page));
         let prev: iced::widget::Button<'_, Self::Message, Renderer> = button(button_config.prev_name).on_press(Self::Message::ChangePage(button_config.prev_page));
         

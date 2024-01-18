@@ -5,6 +5,7 @@ use json;
 use std::fs;
 use dirs;
 use regex::Regex;
+use std::env;
 
 pub struct ModInfo<'a> {
     slug: &'a str,
@@ -15,6 +16,7 @@ pub struct ModInfo<'a> {
 pub struct Directories<'a> {
     pub seperator: char,
     pub minecraft_dir: &'a str,
+    pub home_dir: String
 }
 
 pub static MODS: phf::Map<&str, ModInfo> = phf_map! {
@@ -34,15 +36,15 @@ pub static MODS: phf::Map<&str, ModInfo> = phf_map! {
     // "Tweakeroo"   => ModInfo {slug: "tweakeroo",         dependencies: vec![]},
 };
 
-pub static WINDOWS_DIR: Directories = Directories {
-    seperator: '\\',
-    minecraft_dir: "AppData\\Roaming\\.minecraft"
-};
+// pub static WINDOWS_DIR: Directories = Directories {
+//     seperator: '\\',
+//     minecraft_dir: "AppData\\Roaming\\.minecraft"
+// };
 
-pub static LINUX_DIR: Directories = Directories {
-    seperator: '/',
-    minecraft_dir: ".minecraft"
-};
+// pub static LINUX_DIR: Directories = Directories {
+//     seperator: '/',
+//     minecraft_dir: ".minecraft"
+// };
 
 pub static FABRIC_URL: &str = "https://maven.fabricmc.net/net/fabricmc/fabric-installer/1.0.0/fabric-installer-1.0.0.jar";
 
@@ -67,35 +69,50 @@ async fn download_file(url: &str, path: &str) -> Result<&'static str, &'static s
     return Ok("File downloaded");
 }
 
-pub fn get_home_os_config(os: String) -> (String, Directories<'static>) {
-    let home_dir_option = dirs::home_dir().unwrap();
-    let home_dir: &str = home_dir_option.to_str().unwrap();
-    let os_config: Directories;
+pub fn get_os_config() -> Result<Directories<'static>, String> {
+    let config: Directories;
+    
+    let home_dir_option = dirs::home_dir();
+    
+    if home_dir_option.is_none() {
+        return Err(String::from("Could not find home directory"));
+    }
+    
+    let home_dir: String = home_dir_option.unwrap().to_str().unwrap().to_string();
 
-    match os.as_str() {
-        "windows" => os_config = WINDOWS_DIR.clone(),
-        "linux" => os_config = LINUX_DIR.clone(),
-        _ => os_config = WINDOWS_DIR.clone()
-    };
+    match env::consts::OS {
+        "windows" => config = Directories {
+            seperator: '\\',
+            minecraft_dir: "AppData\\Roaming\\.minecraft",
+            home_dir: home_dir,
+        },
+        "linux" => config = Directories {
+            seperator: '/',
+            minecraft_dir: ".minecraft",
+            home_dir: home_dir,
+        },
+        _ => {
+            return Err(String::from("Invalid OS"));
+        }
+    }
 
-    return (home_dir.to_string(), os_config);
+    return Ok(config.clone());
 }
 
-pub async fn download(version: String, os: String, mods: HashMap<String, bool>) -> Result<String, String> {
+pub async fn download(version: String, mods: HashMap<String, bool>) -> Result<String, String> {
     let client = reqwest::blocking::Client::new();
-    let os_config: Directories;
-    let home_dir_option = dirs::home_dir().unwrap();
-    let home_dir = home_dir_option.to_str().unwrap();
+    
+    let config_result = get_os_config();
 
-    match os.as_str() {
-        "windows" => os_config = WINDOWS_DIR.clone(),
-        "linux" => os_config = LINUX_DIR.clone(),
-        _ => os_config = WINDOWS_DIR.clone()
+    if config_result.is_err() {
+        return Err(String::from("Error getting config"));
     }
+
+    let config: Directories = config_result.unwrap();
 
     let mods_dir = fs::create_dir_all(
         format!("{}{}{}{}mods", 
-            &home_dir, os_config.seperator, os_config.minecraft_dir, os_config.seperator)
+            config.home_dir, config.seperator, config.minecraft_dir, config.seperator)
     );
 
 
@@ -103,7 +120,7 @@ pub async fn download(version: String, os: String, mods: HashMap<String, bool>) 
         println!("Error making directory: {:?}\ndir: {:?}", 
             mods_dir.err(), 
             format!("{}{}{}{}mods", 
-                &home_dir, os_config.seperator, os_config.minecraft_dir, os_config.seperator
+                config.home_dir, config.seperator, config.minecraft_dir, config.seperator
             )
         );
         return Err("Error making mods directory".to_string())
@@ -111,24 +128,27 @@ pub async fn download(version: String, os: String, mods: HashMap<String, bool>) 
 
     for (key, value) in mods.iter() {
         
+        //Get the mod from the static hashmap
         let mod_result = MODS.get(key);
         
-        if mod_result.is_none() {
+        if mod_result.is_none() { //this shouldnt happen but just in case
             println!("Error with finding mod {}", key);
             continue;
         }
         
         let mod_info = mod_result.unwrap();
         
+        //value is the checked, so remove it if its unchecked
         if !value {
             let _ = fs::remove_file(
                 format!("{}{}{}{}mods{}{}.jar",
-                home_dir, os_config.seperator, os_config.minecraft_dir, os_config.seperator, 
-                os_config.seperator, mod_info.slug)
+                config.home_dir, config.seperator, config.minecraft_dir, config.seperator, 
+                config.seperator, mod_info.slug)
             );
             continue;
         }
 
+        //get the right file by looking for a file with the correct version and mod loader
         let version_response = client
             .get(format!("https://api.modrinth.com/v2/project/{}/version", mod_info.slug))
             .header(reqwest::header::USER_AGENT, "github/prushton2/mcmodmanager")
@@ -146,40 +166,37 @@ pub async fn download(version: String, os: String, mods: HashMap<String, bool>) 
             }
             file_index += 1;
         }
+        
+        let file_path = format!("{}{}{}{}mods{}{}.jar",
+            config.home_dir, config.seperator, config.minecraft_dir, config.seperator, 
+            config.seperator, mod_info.slug);
 
-        let file_response = client
-            .get(version_object[file_index]["files"][0]["url"].as_str().unwrap())
-            .header(reqwest::header::USER_AGENT, "github/prushton2/mcmodmanager")
-            .send();
+        let result = download_file(
+                version_object[file_index]["files"][0]["url"].as_str().unwrap(),
+                file_path.as_str()
+            ).await;
 
-        let mut file_data = std::io::Cursor::new(file_response.unwrap().bytes().unwrap());
 
-        let file_result = fs::File::create(
-            format!("{}{}{}{}mods{}{}.jar",
-                home_dir, os_config.seperator, os_config.minecraft_dir, os_config.seperator, 
-                os_config.seperator, mod_info.slug));
-
-        let mut file = file_result.unwrap();
-        let _ = std::io::copy(&mut file_data, &mut file);
+        if result.is_err() {
+            return Err(format!("Error downloading {}: {:?}", mod_info.slug, result.err()));
+        }
     }
 	
-	return Ok(String::from("Operation completed"))
+	return Ok(String::from("Operation completed"));
 }
 
 
 
-pub fn get_installed_mods(os: String) -> HashMap<String, bool> {
-    let home_dir_option = dirs::home_dir().unwrap();
-    let home_dir = home_dir_option.to_str().unwrap();
-    let os_config: Directories;
+pub fn get_installed_mods() -> HashMap<String, bool> {
+    let config_result = get_os_config();
+
+    if config_result.is_err() {
+        println!("Error getting config");
+    }
+
+    let config: Directories = config_result.unwrap();
 
     let mut hashmap: HashMap<String, bool> = HashMap::new();
-
-    match os.as_str() {
-        "windows" => os_config = WINDOWS_DIR.clone(),
-        "linux" => os_config = LINUX_DIR.clone(),
-        _ => os_config = WINDOWS_DIR.clone()
-    };
 
     for (key, value) in MODS.entries.iter() {
 
@@ -187,8 +204,8 @@ pub fn get_installed_mods(os: String) -> HashMap<String, bool> {
             key.to_string(), 
             fs::metadata(
                 format!("{}{}{}{}mods{}{}.jar",
-                home_dir, os_config.seperator, os_config.minecraft_dir, os_config.seperator,
-                os_config.seperator, value.slug)).is_ok()
+                config.home_dir, config.seperator, config.minecraft_dir, config.seperator,
+                config.seperator, value.slug)).is_ok()
             );
 
     }
@@ -196,21 +213,20 @@ pub fn get_installed_mods(os: String) -> HashMap<String, bool> {
     return hashmap
 }
 
-pub fn has_fabric_installed(os: String, version: String) -> Result<bool, String> {
-    let home_dir_option = dirs::home_dir().unwrap();
-    let home_dir = home_dir_option.to_str().unwrap();
-    let os_config: Directories;
+pub fn has_fabric_installed(version: String) -> Result<bool, String> {
+    let config_result = get_os_config();
 
-    match os.as_str() {
-        "windows" => os_config = WINDOWS_DIR.clone(),
-        "linux" => os_config = LINUX_DIR.clone(),
-        _ => os_config = WINDOWS_DIR.clone()
-    };
+    if config_result.is_err() {
+        return Err(String::from("Error getting config"));
+    }
+
+    let config: Directories = config_result.unwrap();
+
 
     let versions_result = fs::read_dir(
         format!("{}{}{}{}versions{}",
-                home_dir, os_config.seperator, os_config.minecraft_dir, os_config.seperator,
-                os_config.seperator));
+                config.home_dir, config.seperator, config.minecraft_dir, config.seperator,
+                config.seperator));
 
     if versions_result.is_err() {
         return Err(format!("Error finding versions: {:?}", versions_result.err()));
@@ -232,19 +248,18 @@ pub fn has_fabric_installed(os: String, version: String) -> Result<bool, String>
     return Ok(false);
 }
 
-pub async fn download_fabric(os: String) -> Result<&'static str, &'static str> {
-    let home_dir_option = dirs::home_dir().unwrap();
-    let home_dir = home_dir_option.to_str().unwrap();
-    let os_config: Directories;
+pub async fn download_fabric() -> Result<&'static str, &'static str> {
+    let config_result = get_os_config();
 
-    match os.as_str() {
-        "windows" => os_config = WINDOWS_DIR.clone(),
-        "linux" => os_config = LINUX_DIR.clone(),
-        _ => os_config = WINDOWS_DIR.clone()
-    };
+    if config_result.is_err() {
+        return Err("Error getting config");
+    }
+
+    let config: Directories = config_result.unwrap();
+
 
     let fabric_path = format!("{}/{}/fabric-installer.jar", 
-        home_dir, os_config.minecraft_dir);
+        config.home_dir, config.minecraft_dir);
 
     let downloaded = download_file(&FABRIC_URL, fabric_path.as_str()).await;
     return downloaded;
