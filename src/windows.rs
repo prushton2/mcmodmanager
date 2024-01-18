@@ -75,7 +75,8 @@ pub fn download(_this: &ModLoader) -> iced::Element<'_, Message> {
 pub fn find_fabric<'a>(this: &'a ModLoader, has_fabric: Result<bool, String>) -> iced::Element<'a, Message> {
 
     let fabric_found = column![
-        text("Fabric was found on your system.")
+        text("Fabric was found on your system.\n\n"),
+        button("Install Fabric Anyway").on_press(Message::ChangePage(1))
     ];
 
     let fabric_not_found = column![
@@ -98,7 +99,7 @@ pub fn find_fabric<'a>(this: &'a ModLoader, has_fabric: Result<bool, String>) ->
 
 pub fn install_fabric(this: &ModLoader) -> iced::Element<'_, Message> {
     //we only get here if fabric is not found
-    return text("Downloading Fabric...").into();
+    return text("Downloading and launching Fabric...").into();
 }
 
 pub fn launch_fabric<'a>(this: &'a ModLoader, fabric_location: String) -> iced::Element<'a, Message> {
@@ -119,5 +120,5 @@ pub fn launch_fabric<'a>(this: &'a ModLoader, fabric_location: String) -> iced::
 }
 
 pub fn done(_this: &ModLoader) -> iced::Element<'_, Message> {
-    return text("Mod download is done. Now install fabric with this link: https://fabricmc.net/").into()
+    return text("Mod download is done. Launch the game under the Fabric profile").into()
 }
