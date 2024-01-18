@@ -6,6 +6,8 @@ use iced::{Application, Settings, Renderer, executor, Theme, Command};
 use std::collections::HashMap;
 use std::process::exit;
 
+use std::env::consts;
+
 // use tokio::time::{sleep, Duration};
 
 use std::cmp::{min, max};
@@ -40,7 +42,7 @@ impl Application for windows::ModLoader {
 
         return (Self {
             page: 0,
-            os: "".to_string(),
+            os: consts::OS.to_string(),
             version: "".to_string(),
             mods: hm,
             response: "".to_string()
@@ -81,7 +83,7 @@ impl Application for windows::ModLoader {
                 self.page += 1;
             }
         };
-        self.page = max(min(self.page, 10), 0);
+        self.page = max(min(self.page, 7), 0);
 
         if self.page == 1 && pageinit {
             self.mods = downloader::get_installed_mods(self.os.clone()).clone();
@@ -157,6 +159,8 @@ impl Application for windows::ModLoader {
             }
             6 => {
                 selected_window = windows::done(&self);
+
+                button_config.next_name = "Finish";
             },
             7 => {
                 exit(0);

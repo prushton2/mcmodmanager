@@ -73,8 +73,8 @@ pub fn get_home_os_config(os: String) -> (String, Directories<'static>) {
     let os_config: Directories;
 
     match os.as_str() {
-        "Windows" => os_config = WINDOWS_DIR.clone(),
-        "Linux" => os_config = LINUX_DIR.clone(),
+        "windows" => os_config = WINDOWS_DIR.clone(),
+        "linux" => os_config = LINUX_DIR.clone(),
         _ => os_config = WINDOWS_DIR.clone()
     };
 
@@ -88,8 +88,8 @@ pub async fn download(version: String, os: String, mods: HashMap<String, bool>) 
     let home_dir = home_dir_option.to_str().unwrap();
 
     match os.as_str() {
-        "Windows" => os_config = WINDOWS_DIR.clone(),
-        "Linux" => os_config = LINUX_DIR.clone(),
+        "windows" => os_config = WINDOWS_DIR.clone(),
+        "linux" => os_config = LINUX_DIR.clone(),
         _ => os_config = WINDOWS_DIR.clone()
     }
 
@@ -176,8 +176,8 @@ pub fn get_installed_mods(os: String) -> HashMap<String, bool> {
     let mut hashmap: HashMap<String, bool> = HashMap::new();
 
     match os.as_str() {
-        "Windows" => os_config = WINDOWS_DIR.clone(),
-        "Linux" => os_config = LINUX_DIR.clone(),
+        "windows" => os_config = WINDOWS_DIR.clone(),
+        "linux" => os_config = LINUX_DIR.clone(),
         _ => os_config = WINDOWS_DIR.clone()
     };
 
@@ -202,8 +202,8 @@ pub fn has_fabric_installed(os: String, version: String) -> Result<bool, String>
     let os_config: Directories;
 
     match os.as_str() {
-        "Windows" => os_config = WINDOWS_DIR.clone(),
-        "Linux" => os_config = LINUX_DIR.clone(),
+        "windows" => os_config = WINDOWS_DIR.clone(),
+        "linux" => os_config = LINUX_DIR.clone(),
         _ => os_config = WINDOWS_DIR.clone()
     };
 
@@ -238,8 +238,8 @@ pub async fn download_fabric(os: String) -> Result<&'static str, &'static str> {
     let os_config: Directories;
 
     match os.as_str() {
-        "Windows" => os_config = WINDOWS_DIR.clone(),
-        "Linux" => os_config = LINUX_DIR.clone(),
+        "windows" => os_config = WINDOWS_DIR.clone(),
+        "linux" => os_config = LINUX_DIR.clone(),
         _ => os_config = WINDOWS_DIR.clone()
     };
 

@@ -2,6 +2,7 @@ use iced::widget::{container, checkbox, text, text_input, button, column, Column
 use std::collections::HashMap;
 use std::process::Command;
 use execute::Execute;
+use std::fs;
 
 use crate::downloader;
 
@@ -30,13 +31,10 @@ pub fn null() -> iced::Element<'static, Message> {
 }
 
 pub fn base_settings(this: &ModLoader) -> iced::Element<'_, Message> {
-	let element = column![
+    
+    let element = column![
 		text("Select your operating system:\n\n"),
-		text(format!("Selected OS: {}", this.os)),
-		row![
-            button("windows").on_press(Message::SetOS(String::from("Windows"))), 
-            button("linux").on_press(Message::SetOS(String::from("Linux")))],
-	
+		text(format!("Detected OS: {}", this.os)),	
 		text("\n\nSelect your game version:"),
 		text_input("1.20.4", &this.version).on_input(Message::VersionSet)	
 	];
@@ -106,11 +104,12 @@ pub fn launch_fabric<'a>(this: &'a ModLoader, fabric_location: String) -> iced::
 
     let mut command = Command::new("java");
     command.arg("-jar");
-    command.arg(fabric_location);
+    command.arg(fabric_location.clone());
 
     let result = command.execute_output();
     
     if result.is_ok() {
+        fs::remove_file(fabric_location);
         return text("Fabric exited successfully").into();
     } else {
         let errmsg = format!("There was an error: {:?}", result.err());
