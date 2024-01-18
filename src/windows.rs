@@ -1,4 +1,4 @@
-use iced::widget::{container, checkbox, text, text_input, button, column, Column, row};
+use iced::widget::{container, checkbox, text, text_input, button, column, Column};
 use std::collections::HashMap;
 use std::process::Command;
 use execute::Execute;
@@ -11,7 +11,6 @@ pub enum Message {
     ChangePage(i32),
     
 	VersionSet(String),
-	SetOS(String),
 	SetMod(bool, String),
     DownloadComplete(Result<String, String>),
 
@@ -70,7 +69,7 @@ pub fn download(_this: &ModLoader) -> iced::Element<'_, Message> {
 	return container(element).into()
 }
 
-pub fn find_fabric<'a>(this: &'a ModLoader, has_fabric: Result<bool, String>) -> iced::Element<'a, Message> {
+pub fn find_fabric<'a>(_this: &'a ModLoader, has_fabric: Result<bool, String>) -> iced::Element<'a, Message> {
 
     let fabric_found = column![
         text("Fabric was found on your system.\n\n"),
@@ -95,12 +94,12 @@ pub fn find_fabric<'a>(this: &'a ModLoader, has_fabric: Result<bool, String>) ->
     return fabric_not_found.into();
 }
 
-pub fn install_fabric(this: &ModLoader) -> iced::Element<'_, Message> {
+pub fn install_fabric(_this: &ModLoader) -> iced::Element<'_, Message> {
     //we only get here if fabric is not found
     return text("Downloading and launching Fabric...").into();
 }
 
-pub fn launch_fabric<'a>(this: &'a ModLoader, fabric_location: String) -> iced::Element<'a, Message> {
+pub fn launch_fabric<'a>(_this: &'a ModLoader, fabric_location: String) -> iced::Element<'a, Message> {
 
     let mut command = Command::new("java");
     command.arg("-jar");
@@ -109,7 +108,7 @@ pub fn launch_fabric<'a>(this: &'a ModLoader, fabric_location: String) -> iced::
     let result = command.execute_output();
     
     if result.is_ok() {
-        fs::remove_file(fabric_location);
+        let _ = fs::remove_file(fabric_location);
         return text("Fabric exited successfully").into();
     } else {
         let errmsg = format!("There was an error: {:?}", result.err());

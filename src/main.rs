@@ -15,9 +15,6 @@ use std::cmp::{min, max};
 mod windows;
 mod downloader;
 
-static FILE_PATH: &str = "./config";
-
-
 fn main() -> iced::Result {
 
     let mut settings = Settings::default();
@@ -57,7 +54,7 @@ impl Application for windows::ModLoader {
         
         let mut pageinit = false; 
         //kinda gross, used to make sure actions that should run on page init run once
-        let mut command = Command::none();
+        let command;
 
         match message {
             Self::Message::ChangePage(pages) => {
@@ -66,9 +63,6 @@ impl Application for windows::ModLoader {
             }
             Self::Message::VersionSet(state) => {
                 self.version = state;
-            },
-            Self::Message::SetOS(state) => {
-                self.os = state;
             },
             Self::Message::SetMod(state, mod_name) => {
                 self.mods.insert(mod_name, state);
