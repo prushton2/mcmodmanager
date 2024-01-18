@@ -42,7 +42,8 @@ impl Application for windows::ModLoader {
             page: 0,
             os: "".to_string(),
             version: "".to_string(),
-            mods: hm
+            mods: hm,
+            response: "".to_string()
         }, Command::none())
     }
 
@@ -77,7 +78,7 @@ impl Application for windows::ModLoader {
                 self.page += 1;
             },
             Self::Message::LaunchFabric(_result) => {
-
+                self.page += 1;
             }
         };
         self.page = max(min(self.page, 10), 0);
@@ -144,14 +145,22 @@ impl Application for windows::ModLoader {
             },
             4 => {
                 selected_window = windows::install_fabric(&self);
-            }
+            },
             5 => {
-                selected_window = windows::null();
-                // exit(0);
+                let home_os_config: (String, downloader::Directories) = downloader::get_home_os_config(self.os.clone());
+
+                let fabric_dir = format!("{}{}{}{}fabric-installer.jar",
+                    home_os_config.0, home_os_config.1.seperator, home_os_config.1.minecraft_dir, home_os_config.1.seperator);
+
+                selected_window = windows::launch_fabric(&self, fabric_dir.clone());
             }
+            6 => {
+                selected_window = windows::null();
+            },
             _ => selected_window = windows::null()
         };
-
+        
+        // exit(0);
 
         let next: iced::widget::Button<'_, Self::Message, Renderer> = button(button_config.next_name).on_press(Self::Message::ChangePage(button_config.next_page));
         let prev: iced::widget::Button<'_, Self::Message, Renderer> = button(button_config.prev_name).on_press(Self::Message::ChangePage(button_config.prev_page));

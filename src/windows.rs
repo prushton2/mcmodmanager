@@ -1,5 +1,7 @@
 use iced::widget::{container, checkbox, text, text_input, button, column, Column, row};
 use std::collections::HashMap;
+use std::process::Command;
+use execute::Execute;
 
 use crate::downloader;
 
@@ -19,7 +21,8 @@ pub struct ModLoader {
     pub page: i32,
     pub os: String,
 	pub version: String,
-	pub mods: HashMap<String, bool>
+	pub mods: HashMap<String, bool>,
+    pub response: String
 }
 
 pub fn null() -> iced::Element<'static, Message> {
@@ -79,7 +82,7 @@ pub fn find_fabric<'a>(this: &'a ModLoader, has_fabric: Result<bool, String>) ->
         text("Fabric was not found on your system"),
         // button("Install Fabric").on_press(Message::ChangePage(1))
     ];
-
+    // fabric_install_result;
     if has_fabric.is_err() {
         return column![
             text(format!("Error locating fabric: {:?}", has_fabric.err()))
@@ -96,6 +99,23 @@ pub fn find_fabric<'a>(this: &'a ModLoader, has_fabric: Result<bool, String>) ->
 pub fn install_fabric(this: &ModLoader) -> iced::Element<'_, Message> {
     //we only get here if fabric is not found
     return text("Downloading Fabric...").into();
+}
+
+pub fn launch_fabric<'a>(this: &'a ModLoader, fabric_location: String) -> iced::Element<'a, Message> {
+
+    let mut command = Command::new("java");
+    command.arg("-jar");
+    command.arg(fabric_location);
+
+    let result = command.execute_output();
+    
+    if result.is_ok() {
+        return text("Fabric exited successfully").into();
+    } else {
+        let errmsg = format!("There was an error: {:?}", result.err());
+        return text(errmsg.as_str()).into();
+    }
+
 }
 
 pub fn done(_this: &ModLoader) -> iced::Element<'_, Message> {

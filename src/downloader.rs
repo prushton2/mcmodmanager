@@ -13,8 +13,8 @@ pub struct ModInfo<'a> {
 
 #[derive(Clone)]
 pub struct Directories<'a> {
-    seperator: char,
-    minecraft_dir: &'a str,
+    pub seperator: char,
+    pub minecraft_dir: &'a str,
 }
 
 pub static MODS: phf::Map<&str, ModInfo> = phf_map! {
@@ -27,13 +27,11 @@ pub static MODS: phf::Map<&str, ModInfo> = phf_map! {
     "Nvidium"     => ModInfo {slug: "nvidium",           dependencies: vec![]},
     "Bobby"       => ModInfo {slug: "bobby",             dependencies: vec![]},
     "ModMenu"     => ModInfo {slug: "modmenu",           dependencies: vec![]},
-
+    "FabricAPI"   => ModInfo {slug: "fabric-api",    dependencies: vec![]},
+    "MaLiLib"     => ModInfo {slug: "malilib",       dependencies: vec![]},
     // please put these on modrinth please please please
     // "MiniHud"     => ModInfo {slug: "minihud",           dependencies: vec![]},
     // "Tweakeroo"   => ModInfo {slug: "tweakeroo",         dependencies: vec![]},
-    
-    "FabricAPI"   => ModInfo {slug: "fabric-api",    dependencies: vec![]},
-    "MaLiLib"     => ModInfo {slug: "malilib",       dependencies: vec![]},
 };
 
 pub static WINDOWS_DIR: Directories = Directories {
@@ -47,6 +45,41 @@ pub static LINUX_DIR: Directories = Directories {
 };
 
 pub static FABRIC_URL: &str = "https://maven.fabricmc.net/net/fabricmc/fabric-installer/1.0.0/fabric-installer-1.0.0.jar";
+
+async fn download_file(url: &str, path: &str) -> Result<&'static str, &'static str> {
+    let client = reqwest::blocking::Client::new();
+    let file_response = client
+        .get(url)
+        .header(reqwest::header::USER_AGENT, "github/prushton2/mcmodmanager")
+        .send();
+
+    let mut file_data = std::io::Cursor::new(file_response.unwrap().bytes().unwrap());
+
+    let file_result = fs::File::create(path);
+
+    let mut file = file_result.unwrap();
+    let resp = std::io::copy(&mut file_data, &mut file);
+
+    if resp.is_err() {
+        return Err("Error copying data to file");
+    }
+
+    return Ok("File downloaded");
+}
+
+pub fn get_home_os_config(os: String) -> (String, Directories<'static>) {
+    let home_dir_option = dirs::home_dir().unwrap();
+    let home_dir: &str = home_dir_option.to_str().unwrap();
+    let os_config: Directories;
+
+    match os.as_str() {
+        "Windows" => os_config = WINDOWS_DIR.clone(),
+        "Linux" => os_config = LINUX_DIR.clone(),
+        _ => os_config = WINDOWS_DIR.clone()
+    };
+
+    return (home_dir.to_string(), os_config);
+}
 
 pub async fn download(version: String, os: String, mods: HashMap<String, bool>) -> Result<String, String> {
     let client = reqwest::blocking::Client::new();
@@ -202,26 +235,17 @@ pub fn has_fabric_installed(os: String, version: String) -> Result<bool, String>
 pub async fn download_fabric(os: String) -> Result<&'static str, &'static str> {
     let home_dir_option = dirs::home_dir().unwrap();
     let home_dir = home_dir_option.to_str().unwrap();
- 
-    let client = reqwest::blocking::Client::new();
+    let os_config: Directories;
 
-    let fabric_response = client
-        .get(FABRIC_URL)
-        .header(reqwest::header::USER_AGENT, "github/prushton2/mcmodmanager")
-        .send();
+    match os.as_str() {
+        "Windows" => os_config = WINDOWS_DIR.clone(),
+        "Linux" => os_config = LINUX_DIR.clone(),
+        _ => os_config = WINDOWS_DIR.clone()
+    };
 
-    if fabric_response.is_err() {
-        return Err("Could not download fabric: {}", fabric_response.err())
-    }
+    let fabric_path = format!("{}/{}/fabric-installer.jar", 
+        home_dir, os_config.minecraft_dir);
 
-    let fabric = fabric_response.unwrap();
-
-    let mut file_data = std::io::Cursor::new(fabric.bytes().unwrap());
-
-    fs::File::create(format!("{}/fabric.jar", home_dir));
-
-    let mut file = file_result.unwrap();
-    let _ = std::io::copy(&mut file_data, &mut file);
-
-    return Ok("Ok");
+    let downloaded = download_file(&FABRIC_URL, fabric_path.as_str()).await;
+    return downloaded;
 }
