@@ -3,7 +3,6 @@
 use iced::widget::{container, text, button, column, Row};
 use iced::{Application, Settings, Renderer, executor, Theme, Command};
 
-use std::collections::HashMap;
 use std::process::exit;
 
 use std::env::consts;
@@ -31,18 +30,23 @@ impl Application for windows::ModLoader {
 
     fn new(_flags: Self::Flags) -> (Self, Command<Self::Message>) {
 
-        let mut hm: HashMap<String, bool> = HashMap::new();
+        let mods_result = downloader::get_installed_mods();
 
-        for (key, _value) in downloader::MODS.entries.iter() {
-            hm.insert(key.to_string(), false);
+        let mods: Vec<String>;
+
+        if mods_result.is_err() {
+            mods = vec![];
+        } else {
+            mods = mods_result.unwrap();
         }
 
         return (Self {
             page: 0,
             os: consts::OS.to_string(),
             version: "".to_string(),
-            mods: hm,
-            response: "".to_string()
+            mods: mods,
+            search_query: "".to_string(),
+            search_results: vec![]
         }, Command::none())
     }
 
@@ -52,20 +56,48 @@ impl Application for windows::ModLoader {
 
     fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
         
-        let mut pageinit = false; 
         //kinda gross, used to make sure actions that should run on page init run once
-        let command;
+        let mut command = Command::none();
 
         match message {
             Self::Message::ChangePage(pages) => {
                 self.page += pages;
-                pageinit = true;
             },
             Self::Message::VersionSet(state) => {
                 self.version = state;
             },
-            Self::Message::SetMod(state, mod_name) => {
-                self.mods.insert(mod_name, state);
+            Self::Message::QuerySet(state) => {
+                self.search_query = state;
+
+                if self.search_query.len() > 0 {
+                    self.page = 2;
+                } else {
+                    self.page = 1;
+                }
+            },
+            Self::Message::SetMod(mod_name, state) => {
+                if state {
+                    self.mods.push(mod_name.clone());
+                    self.search_query = "".to_string();
+                    self.page = 1;
+                } else {
+
+                    let mut i = 0; //https://imgflip.com/i/8cu5sh
+                    while i < self.mods.len() {
+                        if self.mods[i] == mod_name {
+                            let _ = self.mods.remove(i);
+                            break;
+                        }
+                        i += 1;
+                    }
+                
+                }
+            },
+            Self::Message::SearchResultSet(vec) => {
+                self.search_results = vec.unwrap().clone();
+            },
+            Self::Message::Search => {
+                command = Command::perform(downloader::search_modrinth(self.search_query.clone()), Self::Message::SearchResultSet);
             },
             Self::Message::DownloadComplete(result) => {
                 if result.is_err() {
@@ -77,16 +109,12 @@ impl Application for windows::ModLoader {
                 self.page += 1;
             }
         };
-        self.page = max(min(self.page, 7), 0);
-
-        if self.page == 1 && pageinit {
-            self.mods = downloader::get_installed_mods().clone();
-        }
+        self.page = max(min(self.page, 8), 0);
 
         match self.page {
-            2 => command = Command::perform(downloader::download(self.version.clone(), self.mods.clone()), Self::Message::DownloadComplete),
-            4 => command = Command::perform(downloader::download_fabric(), Self::Message::LaunchFabric),
-            _ => command = Command::none(),
+            3 => command = Command::perform(downloader::download(self.version.clone(), self.mods.clone()), Self::Message::DownloadComplete),
+            5 => command = Command::perform(downloader::download_fabric(), Self::Message::LaunchFabric),
+            _ => {},
         }
 
         return command;
@@ -117,15 +145,23 @@ impl Application for windows::ModLoader {
         match self.page {
             0 => selected_window = windows::base_settings(&self),
             1 => {
-                selected_window = windows::mods(&self, &downloader::MODS);
+                selected_window = windows::mods(&self);
                 button_config.next_name = "Download";
+                button_config.next_page = 2;
             },
             2 => {
-                selected_window = windows::download(&self);
+                selected_window = windows::search(&self);
                 button_config.show_next = false;
                 button_config.show_prev = false;
             },
             3 => {
+                selected_window = windows::download(&self);
+                button_config.show_next = false;
+                button_config.show_prev = false;
+                button_config.next_page = 2;
+            
+            },
+            4 => {
                 let has_fabric_result = downloader::has_fabric_installed(self.version.clone());
 
 
@@ -140,10 +176,10 @@ impl Application for windows::ModLoader {
                 }
 
             },
-            4 => {
+            5 => {
                 selected_window = windows::install_fabric(&self);
             },
-            5 => {
+            6 => {
                 let config = downloader::get_os_config().unwrap();
 
                 let fabric_dir = format!("{}{}{}{}fabric-installer.jar",
@@ -151,12 +187,12 @@ impl Application for windows::ModLoader {
 
                 selected_window = windows::launch_fabric(&self, fabric_dir.clone());
             }
-            6 => {
+            7 => {
                 selected_window = windows::done(&self);
 
                 button_config.next_name = "Finish";
             },
-            7 => {
+            8 => {
                 exit(0);
             }
             _ => selected_window = windows::null()
@@ -180,8 +216,7 @@ impl Application for windows::ModLoader {
             Row::with_children(buttons)
         ];
 
-        return container(elements).into()
-        
+        return container(elements).into();        
     }
 
 }

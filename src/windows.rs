@@ -1,17 +1,20 @@
-use iced::widget::{container, checkbox, text, text_input, button, column, Column};
-use std::collections::HashMap;
+use iced::widget::{container, text, text_input, button, column, Column, row};
 use std::process::Command;
 use execute::Execute;
 use std::fs;
 
-use crate::downloader;
 
 #[derive(Debug, Clone)]
 pub enum Message {
     ChangePage(i32),
     
 	VersionSet(String),
-	SetMod(bool, String),
+	
+    QuerySet(String),
+    SearchResultSet(Result<Vec<String>, &'static str>),
+	Search,
+
+    SetMod(String, bool),
     DownloadComplete(Result<String, String>),
 
     LaunchFabric(Result<&'static str, &'static str>),
@@ -21,8 +24,9 @@ pub struct ModLoader {
     pub page: i32,
     pub os: String,
 	pub version: String,
-	pub mods: HashMap<String, bool>,
-    pub response: String
+	pub mods: Vec<String>,
+    pub search_query: String,
+    pub search_results: Vec<String>
 }
 
 pub fn null() -> iced::Element<'static, Message> {
@@ -40,23 +44,53 @@ pub fn base_settings(this: &ModLoader) -> iced::Element<'_, Message> {
 	return container(element).into()
 }
 
-pub fn mods<'a>(this: &ModLoader, mods: &phf::Map<&str, downloader::ModInfo<'a>>) -> iced::Element<'a, Message> {
+pub fn mods<'a>(this: &ModLoader) -> iced::Element<'a, Message> {
 	
     let mut elements: Vec<iced::Element<'_, Message, iced::Renderer>> = vec![];
     elements.push(
-        text("Select Mods:\n").into()
+        text("Selected Mods:\n").into()
+    );
+    elements.push(
+        text_input("Search for mods", &this.search_query).on_input(Message::QuerySet).into()
+    );
+    elements.push(
+        text("\n").into()
     );
 
-
-    for (key, _val) in mods.entries.iter() {
+    for key in this.mods.clone() {
         elements.push(
-            checkbox(key.to_string(), *(this.mods.get(*key).unwrap()), |v| Message::SetMod(v, key.to_string())).into()
+            container(
+            row![
+                button(" - ").on_press(Message::SetMod(key.clone(), false)),
+                text(key.as_str())
+            ]).into()
+            
         );
     }
 
     let element = Column::with_children(elements);
 
 	return container(element).into()
+}
+
+pub fn search(this: &ModLoader) -> iced::Element<'_, Message> {
+    let mut elements: Vec<iced::Element<'_, Message, iced::Renderer>> = vec![];
+    elements.push(text("Search\n").into());
+    elements.push(text_input("Search for mods", &this.search_query).on_input(Message::QuerySet).into());
+    elements.push(button("Search").on_press(Message::Search).into());
+
+
+    for result in this.search_results.clone() {
+        elements.push(
+            container(row![
+                button(" + ").on_press(Message::SetMod(result.clone(), true)),
+                text(result.as_str())
+            ]).into()
+        );
+    }
+
+    let element = Column::with_children(elements);
+    return container(element).into()
 }
 
 pub fn download(_this: &ModLoader) -> iced::Element<'_, Message> {
