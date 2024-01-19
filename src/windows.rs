@@ -32,7 +32,6 @@ pub fn null() -> iced::Element<'static, Message> {
 pub fn base_settings(this: &ModLoader) -> iced::Element<'_, Message> {
     
     let element = column![
-		text("Select your operating system:\n\n"),
 		text(format!("Detected OS: {}", this.os)),	
 		text("\n\nSelect your game version:"),
 		text_input("1.20.4", &this.version).on_input(Message::VersionSet)	
