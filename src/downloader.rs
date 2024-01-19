@@ -93,6 +93,49 @@ pub async fn download(version: String, mods: Vec<String>) -> Result<String, Stri
         return Err("Error making mods directory".to_string())
     }
 
+
+    //i will rewrite this later
+    //it will go over all mods in /mods and remove ones not in the mods vector
+    let mods_dir_result = fs::read_dir(
+        format!("{}{}{}{}mods", config.home_dir, config.seperator,
+        config.minecraft_dir, config.seperator)
+    );
+
+    if mods_dir_result.is_err() {
+        return Err(String::from("Error deleting existing mods"));
+    }
+
+    let mods_dir = mods_dir_result.unwrap();
+
+    for mod_path in mods_dir {
+        let mod_name_os_string = mod_path.unwrap().file_name();
+        let mut mod_name = mod_name_os_string.into_string().unwrap();
+        //remove .jar
+        mod_name.pop();mod_name.pop();mod_name.pop();mod_name.pop();
+
+        let mut mcm_extension = String::from("");
+        //get rid of the -mcm at the end of the file name
+        mcm_extension.push(mod_name.pop().unwrap()); 
+        mcm_extension.push(mod_name.pop().unwrap());
+        mcm_extension.push(mod_name.pop().unwrap());
+        mcm_extension.push(mod_name.pop().unwrap());
+
+        if mcm_extension != "mcm-" {
+            continue;
+        }
+        
+        if mods.iter().any(|i| i == &mod_name ) {
+            continue;
+        }
+
+        let _ = fs::remove_file(
+            format!("{}{}{}{}mods{}{}-mcm.jar",
+                config.home_dir, config.seperator, config.minecraft_dir, config.seperator,
+                config.seperator, mod_name)
+        );
+    }
+
+
     for slug in mods.iter() {
 
         //get the right file by looking for a file with the correct version and mod loader
@@ -114,7 +157,7 @@ pub async fn download(version: String, mods: Vec<String>) -> Result<String, Stri
             file_index += 1;
         }
         
-        let file_path = format!("{}{}{}{}mods{}{}.jar",
+        let file_path = format!("{}{}{}{}mods{}{}-mcm.jar",
             config.home_dir, config.seperator, config.minecraft_dir, config.seperator, 
             config.seperator, slug);
 
@@ -160,12 +203,24 @@ pub fn get_installed_mods() -> Result<Vec<String>, String> {
         }
 
         let mut file_name = mod_name.unwrap().file_name().into_string().unwrap();
+        
+        //get rid of the .jar at the end of the file name
         file_name.pop();
         file_name.pop();
         file_name.pop();
         file_name.pop();
 
-        mods.push(file_name);
+        let mut mcm_extension = String::from("");
+
+        //get rid of the -mcm at the end of the file name
+        mcm_extension.push(file_name.pop().unwrap()); 
+        mcm_extension.push(file_name.pop().unwrap());
+        mcm_extension.push(file_name.pop().unwrap());
+        mcm_extension.push(file_name.pop().unwrap());
+
+        if mcm_extension == "mcm-" {
+            mods.push(file_name);
+        }
     }
     
     return Ok(mods);
