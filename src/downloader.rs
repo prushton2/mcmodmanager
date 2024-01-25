@@ -101,7 +101,7 @@ pub async fn download<'a>(version: String, mods: Vec<String>) -> Result<&'a str,
         let mod_name_os_string = mod_path.unwrap().file_name();
         let file = mod_name_os_string.into_string().unwrap();
         
-        let file_name = &file[..file.len()-4];
+        let _file_name = &file[..file.len()-4];
         let extension = &file[file.len()-8..file.len()-4];
         let mod_name = &file[..file.len()-8];
 
@@ -191,24 +191,14 @@ pub fn get_installed_mods() -> Result<Vec<String>, &'static str> {
             continue;
         }
 
-        let mut file_name = mod_name.unwrap().file_name().into_string().unwrap();
+        let file = mod_name.unwrap().file_name().into_string().unwrap();
         
-        //get rid of the .jar at the end of the file name
-        file_name.pop();
-        file_name.pop();
-        file_name.pop();
-        file_name.pop();
+        let file_name = &file[..file.len()-4];
+        let extension = &file[file.len()-8..file.len()-4];
+        let _mod_name = &file[..file.len()-8];
 
-        let mut mcm_extension = String::from("");
-
-        //get rid of the -mcm at the end of the file name
-        mcm_extension.push(file_name.pop().unwrap()); 
-        mcm_extension.push(file_name.pop().unwrap());
-        mcm_extension.push(file_name.pop().unwrap());
-        mcm_extension.push(file_name.pop().unwrap());
-
-        if mcm_extension == "mcm-" {
-            mods.push(file_name);
+        if extension == "-mcm" {
+            mods.push(String::from(file_name));
         }
     }
     
