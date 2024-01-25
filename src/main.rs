@@ -1,15 +1,19 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
-use iced::widget::{container, text, button, column, Row, row, Column};
+use iced::widget::{container, text, button, column, Row, row};
 use iced::{Application, Settings, Renderer, executor, Theme, Command};
-use iced::{Alignment, Color, Element, Length};
-use iced::alignment::Horizontal;
+use iced::{Alignment, Color, Length};
 
-// use std::process::exit;
-// use std::env::consts;
-// use std::cmp::{min, max};
+use num::clamp;
 
 mod ui;
+mod windows;
+
+use crate::ui::Page;
+use crate::windows::{version_select, mod_select, mod_search, mod_download, check_fabric};
+use std::process::exit;
+// use std::env::consts;
+
 
 fn main() -> iced::Result {
 
@@ -45,31 +49,35 @@ impl Application for ui::ModLoader {
         
         let mut command = Command::none();
 
+        match message {
+            Self::Message::ChangePage(n) => {
+                self.page += n;
+            },
+            _ => ()
+        }
+
+        self.page = clamp(self.page, 0, ui::Page::count());
+
         return command;
     }
 
     fn view(&self) -> iced::Element<'_, Self::Message> {
 
         let button_config = ui::ButtonConfig::new();
-        let selected_window: iced::Element<'_, Self::Message> = text("window").into(); 
-        
-        
+        let selected_window: iced::Element<'_, Self::Message>;// = text(format!("{:?}", ui::Page::cast(self.page))).into(); 
         
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        match Page::cast(self.page) {
+            Page::VersionSelect => selected_window = version_select::window(&self),
+            Page::ModSelect => selected_window = mod_select::window(&self),
+            Page::ModSearch => selected_window = mod_search::window(&self),
+            Page::ModDownload => selected_window = mod_download::window(&self),
+            Page::CheckFabric => selected_window = check_fabric::window(&self),
+            Page::Exit => exit(0),
+            _ => selected_window = windows::null()
+        }
+        
+        
         let next: iced::widget::Button<'_, Self::Message, Renderer> = button(button_config.next_name).on_press(Self::Message::ChangePage(button_config.next_page));
 		let prev: iced::widget::Button<'_, Self::Message, Renderer> = button(button_config.prev_name).on_press(Self::Message::ChangePage(button_config.prev_page));
         let mut buttons: Vec<iced::Element<'_, Self::Message, Renderer>> = vec![];		
@@ -85,6 +93,7 @@ impl Application for ui::ModLoader {
 
             column![
                 row![
+                    text(format!("{} | {:?}", self.page, Page::cast(self.page))),
                     Row::with_children(buttons).padding(5).spacing(5)
                 ].height(Length::Fill).align_items(Alignment::End)
             ].width(Length::Fill).height(Length::Fill).align_items(Alignment::End)

@@ -1,5 +1,17 @@
-use iced::{Renderer, Element};
+use iced::{Renderer};
 use iced::widget::{button, Row};
+
+use strum::{IntoEnumIterator};
+use strum_macros::{EnumIter};
+
+pub struct ModLoader {
+    pub page: i32,
+    pub os: String,
+	pub version: String,
+	pub mods: Vec<String>,
+    pub search_query: String,
+    pub search_results: Vec<String>
+}
 
 
 #[derive(Debug, Clone)]
@@ -18,6 +30,7 @@ pub enum Message {
     LaunchFabric(Result<&'static str, &'static str>),
 }
 
+#[derive(EnumIter, Debug, PartialEq)]
 pub enum Page {
 	VersionSelect,
 	ModSelect,
@@ -25,18 +38,28 @@ pub enum Page {
 	ModDownload,
 	CheckFabric,
 	DownloadFabric,
-	Finish
+	Finish,
+	Exit
 }
 
+impl Page {
+	pub fn cast(i: i32) -> Self {
+		let mut iterable = Page::iter();
+				
+		let result = iterable.nth(i as usize);
 
-pub struct ModLoader {
-    pub page: i32,
-    pub os: String,
-	pub version: String,
-	pub mods: Vec<String>,
-    pub search_query: String,
-    pub search_results: Vec<String>
+		if result.is_some() {
+			return result.unwrap();
+		}
+
+		return Page::VersionSelect
+	}
+
+	pub fn count() -> i32 {
+		return (Page::iter().count()-1) as i32;
+	}
 }
+
 
 pub struct ButtonConfig<'a> {
 	pub next_name: &'a str,
@@ -78,6 +101,3 @@ impl ButtonConfig<'_> {
 	}
 
 }
-
-
-
