@@ -1420,14 +1420,13 @@ dependencies = [
 
 [[package]]
 name = "mcmodmanager"
-version = "0.1.0"
+version = "2.1.0"
 dependencies = [
  "dirs",
  "execute",
  "iced",
  "json",
  "num",
- "phf",
  "regex",
  "reqwest",
  "serde",

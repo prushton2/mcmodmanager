@@ -1,46 +1,37 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
-use iced::widget::{container, text, button, column, Row};
+use iced::widget::{container, text, button, column, Row, row, Column};
 use iced::{Application, Settings, Renderer, executor, Theme, Command};
+use iced::{Alignment, Color, Element, Length};
+use iced::alignment::Horizontal;
 
-use std::process::exit;
-use std::env::consts;
-use std::cmp::{min, max};
+// use std::process::exit;
+// use std::env::consts;
+// use std::cmp::{min, max};
 
-mod windows;
-mod downloader;
+mod ui;
 
 fn main() -> iced::Result {
 
     let mut settings = Settings::default();
     settings.window.size = (400, 400);
 
-    return windows::ModLoader::run(settings)
+    return ui::ModLoader::run(settings)
 }
 
-impl Application for windows::ModLoader {
-    type Message = windows::Message;
+impl Application for ui::ModLoader {
+    type Message = ui::Message;
     type Theme = Theme;
     type Executor = executor::Default;
     type Flags = ();
 
     fn new(_flags: Self::Flags) -> (Self, Command<Self::Message>) {
 
-        let mods_result = downloader::get_installed_mods();
-
-        let mods: Vec<String>;
-
-        if mods_result.is_err() {
-            mods = vec![];
-        } else {
-            mods = mods_result.unwrap();
-        }
-
         return (Self {
             page: 0,
-            os: consts::OS.to_string(),
+            os: "FIXME".to_string(),
             version: "".to_string(),
-            mods: mods,
+            mods: vec![],
             search_query: "".to_string(),
             search_results: vec![]
         }, Command::none())
@@ -52,168 +43,55 @@ impl Application for windows::ModLoader {
 
     fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
         
-        //kinda gross, used to make sure actions that should run on page init run once
         let mut command = Command::none();
-
-        match message {
-            Self::Message::ChangePage(pages) => {
-                self.page += pages;
-            },
-            Self::Message::VersionSet(state) => {
-                self.version = state;
-            },
-            Self::Message::QuerySet(state) => {
-                self.search_query = state;
-
-                if self.search_query.len() > 0 {
-                    self.page = 2;
-                } else {
-                    self.page = 1;
-                }
-            },
-            Self::Message::SetMod(mod_name, state) => {
-                if state {
-                    self.mods.push(mod_name.clone());
-                    self.search_query = "".to_string();
-                    self.page = 1;
-                } else {
-
-                    let mut i = 0; //https://imgflip.com/i/8cu5sh
-                    while i < self.mods.len() {
-                        if self.mods[i] == mod_name {
-                            let _ = self.mods.remove(i);
-                            break;
-                        }
-                        i += 1;
-                    }
-                
-                }
-            },
-            Self::Message::SearchResultSet(vec) => {
-                self.search_results = vec.unwrap().clone();
-            },
-            Self::Message::Search => {
-                command = Command::perform(downloader::search_modrinth(self.search_query.clone()), Self::Message::SearchResultSet);
-            },
-            Self::Message::DownloadComplete(result) => {
-                if result.is_err() {
-                    println!("{:?}", result.err());
-                }
-                self.page += 1;
-            },
-            Self::Message::LaunchFabric(_result) => {
-                self.page += 1;
-            }
-        };
-        self.page = max(min(self.page, 8), 0);
-
-        match self.page {
-            3 => command = Command::perform(downloader::download(self.version.clone(), self.mods.clone()), Self::Message::DownloadComplete),
-            5 => command = Command::perform(downloader::download_fabric(), Self::Message::LaunchFabric),
-            _ => {},
-        }
 
         return command;
     }
 
     fn view(&self) -> iced::Element<'_, Self::Message> {
+
+        let button_config = ui::ButtonConfig::new();
+        let selected_window: iced::Element<'_, Self::Message> = text("window").into(); 
         
-        struct ButtonConfig<'a> {
-            next_name: &'a str,
-            prev_name: &'a str,
-            show_next: bool,
-            show_prev: bool,
-            next_page: i32,
-            prev_page: i32
-        }
-
-        let mut button_config: ButtonConfig = ButtonConfig {
-            next_name: "Next",
-            prev_name: "Back",
-            show_next: true,
-            show_prev: true,
-            next_page: 1, //amount of pages to change when button is pressed
-            prev_page: -1
-        };
-
-        let selected_window;
-
-        match self.page {
-            0 => selected_window = windows::base_settings(&self),
-            1 => {
-                selected_window = windows::mods(&self);
-                button_config.next_name = "Download";
-                button_config.next_page = 2;
-            },
-            2 => {
-                selected_window = windows::search(&self);
-                button_config.show_next = false;
-                button_config.show_prev = false;
-            },
-            3 => {
-                selected_window = windows::download(&self);
-                button_config.show_next = false;
-                button_config.show_prev = false;
-                button_config.next_page = 2;
-            
-            },
-            4 => {
-                let has_fabric_result = downloader::has_fabric_installed(&self.version);
-
-
-                selected_window = windows::find_fabric(&self, has_fabric_result.clone());
-
-                if has_fabric_result.is_ok() {
-                    if !has_fabric_result.clone().unwrap() {
-                        button_config.next_name = "Install Fabric";
-                    } else {
-                        button_config.next_page = 3;
-                    }
-                }
-                button_config.show_prev = false;
-
-            },
-            5 => {
-                selected_window = windows::install_fabric(&self);
-            },
-            6 => {
-                let config = downloader::get_os_config().unwrap();
-
-                let fabric_dir = format!("{}{}{}{}fabric-installer.jar",
-                    config.home_dir, config.seperator, config.minecraft_dir, config.seperator);
-
-                selected_window = windows::launch_fabric(&self, fabric_dir.clone());
-            }
-            7 => {
-                selected_window = windows::done(&self);
-
-                button_config.next_name = "Finish";
-            },
-            8 => {
-                exit(0);
-            }
-            _ => selected_window = windows::null()
-        };
         
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         let next: iced::widget::Button<'_, Self::Message, Renderer> = button(button_config.next_name).on_press(Self::Message::ChangePage(button_config.next_page));
-        let prev: iced::widget::Button<'_, Self::Message, Renderer> = button(button_config.prev_name).on_press(Self::Message::ChangePage(button_config.prev_page));
-        
-        let mut buttons: Vec<iced::Element<'_, Self::Message, Renderer>> = vec![];
-
-        if button_config.show_prev {
-            buttons.push(prev.into());
-        }
-        if button_config.show_next {
-            buttons.push(next.into());
-        }
+		let prev: iced::widget::Button<'_, Self::Message, Renderer> = button(button_config.prev_name).on_press(Self::Message::ChangePage(button_config.prev_page));
+        let mut buttons: Vec<iced::Element<'_, Self::Message, Renderer>> = vec![];		
+		if button_config.prev_show {
+			buttons.push(prev.into());
+		}
+		if button_config.next_show {
+			buttons.push(next.into());
+		}
 
         let elements = column![
-            selected_window,
-            text("\n\n"),
-            Row::with_children(buttons)
-        ];
+            column![selected_window].padding(5),
 
-        return container(elements).into();        
+            column![
+                row![
+                    Row::with_children(buttons).padding(5).spacing(5)
+                ].height(Length::Fill).align_items(Alignment::End)
+            ].width(Length::Fill).height(Length::Fill).align_items(Alignment::End)
+        
+        ].width(Length::Fill).height(Length::Fill);
+
+        return container(elements).width(Length::Fill).height(Length::Fill).into();        
     }
 
 }
