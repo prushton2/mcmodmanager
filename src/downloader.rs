@@ -5,6 +5,7 @@ use dirs;
 use regex::Regex;
 use std::env;
 
+pub static FABRIC_URL: &str = "https://maven.fabricmc.net/net/fabricmc/fabric-installer/1.0.0/fabric-installer-1.0.0.jar";
 
 #[derive(Clone)]
 pub struct Directories<'a> {
@@ -13,9 +14,8 @@ pub struct Directories<'a> {
     pub home_dir: String
 }
 
-pub static FABRIC_URL: &str = "https://maven.fabricmc.net/net/fabricmc/fabric-installer/1.0.0/fabric-installer-1.0.0.jar";
 
-async fn download_file(url: &str, path: &str) -> Result<&'static str, &'static str> {
+async fn download_file<'a>(url: &'a str, path: &str) -> Result<&'a str, &'a str> {
     let client = reqwest::blocking::Client::new();
     let file_response = client
         .get(url)
@@ -66,13 +66,13 @@ pub fn get_os_config() -> Result<Directories<'static>, String> {
     return Ok(config.clone());
 }
 
-pub async fn download(version: String, mods: Vec<String>) -> Result<String, String> {
+pub async fn download<'a>(version: String, mods: Vec<String>) -> Result<&'a str, &'a str> {
     let client = reqwest::blocking::Client::new();
     
     let config_result = get_os_config();
 
     if config_result.is_err() {
-        return Err(String::from("Error getting config"));
+        return Err("Error getting config");
     }
 
     let config: Directories = config_result.unwrap();
@@ -82,45 +82,30 @@ pub async fn download(version: String, mods: Vec<String>) -> Result<String, Stri
             config.home_dir, config.seperator, config.minecraft_dir, config.seperator)
     );
 
-
     if mods_dir.is_err() {
-        println!("Error making directory: {:?}\ndir: {:?}", 
-            mods_dir.err(), 
-            format!("{}{}{}{}mods", 
-                config.home_dir, config.seperator, config.minecraft_dir, config.seperator
-            )
-        );
-        return Err("Error making mods directory".to_string())
+        return Err("Error making mods directory")
     }
 
-
-    //i will rewrite this later
-    //it will go over all mods in /mods and remove ones not in the mods vector
     let mods_dir_result = fs::read_dir(
         format!("{}{}{}{}mods", config.home_dir, config.seperator,
         config.minecraft_dir, config.seperator)
     );
 
     if mods_dir_result.is_err() {
-        return Err(String::from("Error deleting existing mods"));
+        return Err("Error deleting existing mods");
     }
 
     let mods_dir = mods_dir_result.unwrap();
 
     for mod_path in mods_dir {
         let mod_name_os_string = mod_path.unwrap().file_name();
-        let mut mod_name = mod_name_os_string.into_string().unwrap();
-        //remove .jar
-        mod_name.pop();mod_name.pop();mod_name.pop();mod_name.pop();
+        let file = mod_name_os_string.into_string().unwrap();
+        
+        let file_name = &file[..file.len()-4];
+        let extension = &file[file.len()-8..file.len()-4];
+        let mod_name = &file[..file.len()-8];
 
-        let mut mcm_extension = String::from("");
-        //get rid of the -mcm at the end of the file name
-        mcm_extension.push(mod_name.pop().unwrap()); 
-        mcm_extension.push(mod_name.pop().unwrap());
-        mcm_extension.push(mod_name.pop().unwrap());
-        mcm_extension.push(mod_name.pop().unwrap());
-
-        if mcm_extension != "mcm-" {
+        if extension != "-mcm" {
             continue;
         }
         
@@ -128,11 +113,14 @@ pub async fn download(version: String, mods: Vec<String>) -> Result<String, Stri
             continue;
         }
 
-        let _ = fs::remove_file(
-            format!("{}{}{}{}mods{}{}-mcm.jar",
+        let res = fs::remove_file(
+            format!("{}{}{}{}mods{}{}",
                 config.home_dir, config.seperator, config.minecraft_dir, config.seperator,
-                config.seperator, mod_name)
+                config.seperator, file)
         );
+        if res.is_ok() {
+            println!("Removed {}", file);
+        }        
     }
 
 
@@ -168,18 +156,19 @@ pub async fn download(version: String, mods: Vec<String>) -> Result<String, Stri
 
 
         if result.is_err() {
-            return Err(format!("Error downloading {}: {:?}", slug, result.err()));
+            return Err("Error downloading Mod");
         }
+        println!("Downloaded {}", slug);
     }
 	
-	return Ok(String::from("Operation completed"));
+	return Ok("Operation completed");
 }
 
-pub fn get_installed_mods() -> Result<Vec<String>, String> {
+pub fn get_installed_mods() -> Result<Vec<String>, &'static str> {
     let config_result = get_os_config();
 
     if config_result.is_err() {
-        println!("Error getting config");
+        return Err("Error getting config");
     }
 
     let config: Directories = config_result.unwrap();
@@ -192,7 +181,7 @@ pub fn get_installed_mods() -> Result<Vec<String>, String> {
                 config.seperator));
 
     if mods_result.is_err() {
-        return Err(format!("Error finding versions: {:?}", mods_result.err()));
+        return Err("Error finding versions: {:?}");
     }
  
     let mods_dir = mods_result.unwrap();
@@ -226,7 +215,7 @@ pub fn get_installed_mods() -> Result<Vec<String>, String> {
     return Ok(mods);
 }
 
-pub fn has_fabric_installed(version: String) -> Result<bool, String> {
+pub fn has_fabric_installed(version: &String) -> Result<bool, String> {
     let config_result = get_os_config();
 
     if config_result.is_err() {
@@ -260,7 +249,7 @@ pub fn has_fabric_installed(version: String) -> Result<bool, String> {
     return Ok(false);
 }
 
-pub async fn download_fabric() -> Result<&'static str, &'static str> {
+pub async fn download_fabric<'a>() -> Result<&'a str, &'a str> {
     let config_result = get_os_config();
 
     if config_result.is_err() {
@@ -272,11 +261,11 @@ pub async fn download_fabric() -> Result<&'static str, &'static str> {
     let fabric_path = format!("{}/{}/fabric-installer.jar", 
         config.home_dir, config.minecraft_dir);
 
-    let downloaded = download_file(&FABRIC_URL, fabric_path.as_str()).await;
+    let downloaded = download_file(&FABRIC_URL, &fabric_path.as_str()).await;
     return downloaded;
 }
 
-pub async fn search_modrinth(query: String) -> Result<Vec<String>, &'static str> {
+pub async fn search_modrinth<'a>(query: String) -> Result<Vec<String>, &'a str> {
     let client = reqwest::blocking::Client::new();
 
     let search_response = client

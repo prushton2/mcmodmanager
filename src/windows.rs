@@ -15,7 +15,7 @@ pub enum Message {
 	Search,
 
     SetMod(String, bool),
-    DownloadComplete(Result<String, String>),
+    DownloadComplete(Result<&'static str, &'static str>),
 
     LaunchFabric(Result<&'static str, &'static str>),
 }

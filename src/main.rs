@@ -4,11 +4,7 @@ use iced::widget::{container, text, button, column, Row};
 use iced::{Application, Settings, Renderer, executor, Theme, Command};
 
 use std::process::exit;
-
 use std::env::consts;
-
-// use tokio::time::{sleep, Duration};
-
 use std::cmp::{min, max};
 
 mod windows;
@@ -162,7 +158,7 @@ impl Application for windows::ModLoader {
             
             },
             4 => {
-                let has_fabric_result = downloader::has_fabric_installed(self.version.clone());
+                let has_fabric_result = downloader::has_fabric_installed(&self.version);
 
 
                 selected_window = windows::find_fabric(&self, has_fabric_result.clone());
@@ -174,6 +170,7 @@ impl Application for windows::ModLoader {
                         button_config.next_page = 3;
                     }
                 }
+                button_config.show_prev = false;
 
             },
             5 => {
