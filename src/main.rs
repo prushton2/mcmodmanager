@@ -4,6 +4,8 @@ use iced::widget::{container, text, button, column, Row, row};
 use iced::{Application, Settings, Renderer, executor, Theme, Command};
 use iced::{Alignment, Color, Length};
 
+use dirs;
+
 use num::clamp;
 
 mod ui;
@@ -12,7 +14,7 @@ mod windows;
 use crate::ui::Page;
 use crate::windows::{version_select, mod_select, mod_search, mod_download, check_fabric};
 use std::process::exit;
-// use std::env::consts;
+use std::env::consts;
 
 
 fn main() -> iced::Result {
@@ -31,13 +33,29 @@ impl Application for ui::ModLoader {
 
     fn new(_flags: Self::Flags) -> (Self, Command<Self::Message>) {
 
+        let home_dir_option = dirs::home_dir();
+        
+        if home_dir_option.is_none() {
+            exit(1);
+        }
+
+        let minecraft_dir: &str;
+
+        match consts::OS {
+            "windows" => minecraft_dir = "AppData/Roaming/.minecraft",
+            "linux" => minecraft_dir = ".minecraft",
+            _ => exit(1)
+        };
+
         return (Self {
             page: 0,
-            os: "FIXME".to_string(),
             version: "".to_string(),
             mods: vec![],
             search_query: "".to_string(),
-            search_results: vec![]
+            search_results: vec![],
+            os: consts::OS.to_string(),
+            home_dir: home_dir_option.unwrap().to_str().unwrap().to_string(),
+            minecraft_dir: minecraft_dir.to_string()
         }, Command::none())
     }
 
@@ -72,7 +90,10 @@ impl Application for ui::ModLoader {
             Page::ModSelect => selected_window = mod_select::window(&self),
             Page::ModSearch => selected_window = mod_search::window(&self),
             Page::ModDownload => selected_window = mod_download::window(&self),
-            Page::CheckFabric => selected_window = check_fabric::window(&self),
+            Page::CheckFabric => {
+                let has_fabric_result = check_fabric::has_fabric_installed(&self);
+                selected_window = check_fabric::window(&self, &has_fabric_result);
+            },
             Page::Exit => exit(0),
             _ => selected_window = windows::null()
         }

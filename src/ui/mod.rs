@@ -6,11 +6,13 @@ use strum_macros::{EnumIter};
 
 pub struct ModLoader {
     pub page: i32,
-    pub os: String,
 	pub version: String,
 	pub mods: Vec<String>,
     pub search_query: String,
-    pub search_results: Vec<String>
+    pub search_results: Vec<String>,
+    pub os: String,
+	pub home_dir: String,
+	pub minecraft_dir: String
 }
 
 
