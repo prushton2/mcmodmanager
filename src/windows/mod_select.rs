@@ -54,7 +54,7 @@ pub fn get_installed_mods(this: &ModLoader) -> Result<Vec<String>, &'static str>
 
         let file = mod_name.unwrap().file_name().into_string().unwrap();
         
-        let file_name = &file[..file.len()-4];
+        let _file_name = &file[..file.len()-4];
         let extension = &file[file.len()-8..file.len()-4];
         let mod_name = &file[..file.len()-8];
 

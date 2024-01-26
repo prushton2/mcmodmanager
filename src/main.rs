@@ -78,8 +78,42 @@ impl Application for ui::ModLoader {
             },
 
             Self::Message::SetQuery(q) => {
+                if q == "" {
+                    self.page = 1;
+                } else {
+                    self.page = 2;
+                }
+
                 self.search_query = q;
             },
+
+            Self::Message::SetMod(mod_name, state) => {
+                if state {
+                    self.mods.push(mod_name.clone());
+                    self.search_query = "".to_string();
+                    self.page = 1;
+                } else {
+
+                    let mut i = 0; //https://imgflip.com/i/8cu5sh
+                    while i < self.mods.len() {
+                        if self.mods[i] == mod_name {
+                            let _ = self.mods.remove(i);
+                            break;
+                        }
+                        i += 1;
+                    }
+
+                }
+            },
+
+
+            Self::Message::SearchResultSet(vec) => {
+                self.search_results = vec.unwrap().clone();
+            }
+
+            Self::Message::Search => {
+                command = Command::perform(mod_search::search_modrinth(self.search_query.clone()), Self::Message::SearchResultSet);
+            }
 
             Self::Message::DownloadComplete(result) => {
                 self.page += 1;
@@ -96,13 +130,15 @@ impl Application for ui::ModLoader {
 
         //random page specific functions (launching commands, reading filesystem, etc)
         match ui::Page::cast(self.page) {
-            Page::ModSelect => {
+
+            Page::VersionSelect => {
                 let result = mod_select::get_installed_mods(&self);
                 if result.is_err() {
                     exit(1);
                 }
                 self.mods = result.unwrap();
-            }
+            },
+
             Page::ModDownload => {command = Command::perform(mod_download::download(self.clone()), Self::Message::DownloadComplete)},
             Page::DownloadFabric => {command = Command::perform(download_fabric::download_fabric(self.clone()), Self::Message::LaunchFabric)},
             _ => {}
@@ -122,22 +158,32 @@ impl Application for ui::ModLoader {
             Page::ModSelect => {
                 selected_window = mod_select::window(&self);
                 button_config.next_page = 2;
+                button_config.next_name = "Download";
             },
             Page::ModSearch => {
                 selected_window = mod_search::window(&self);
-                // button_config.next_show = false;
-                // button_config.prev_show = false;
+                button_config.next_show = false;
+                button_config.prev_show = false;
             },
             Page::ModDownload => {
                 selected_window = mod_download::window(&self);
-                // button_config.next_show = false;
-                // button_config.prev_show = false;
+                button_config.next_show = false;
+                button_config.prev_show = false;
             },
             Page::CheckFabric => {
                 let has_fabric_result = check_fabric::has_fabric_installed(&self);
                 selected_window = check_fabric::window(&self, &has_fabric_result);
-                button_config.prev_page = -3;
-                button_config.next_page = 3;
+                button_config.prev_page = -4;
+
+                if has_fabric_result.is_ok() {
+                    if !has_fabric_result.unwrap() { //what
+                        button_config.next_name = "Install";
+                    } else {
+                        button_config.next_name = "Skip";
+                        button_config.next_page = 3;
+                    }
+                }
+
             },
             Page::DownloadFabric => {
                 selected_window = download_fabric::window(&self);
