@@ -179,7 +179,7 @@ impl Application for ui::ModLoader {
                     if !has_fabric_result.unwrap() { //what
                         button_config.next_name = "Install";
                     } else {
-                        button_config.next_name = "Skip";
+                        button_config.next_name = "Next";
                         button_config.next_page = 3;
                     }
                 }
