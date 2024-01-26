@@ -6,7 +6,7 @@ use crate::ui::{ModLoader, Message};
 pub fn window(this: &ModLoader) -> iced::Element<'_, Message> {
     let mut elements: Vec<iced::Element<'_, Message, iced::Renderer>> = vec![];
     elements.push(text("Search\n").into());
-    elements.push(text_input("Search for mods", &this.search_query).on_input(Message::QuerySet).into());
+    elements.push(text_input("Search for mods", &this.search_query).on_input(Message::SetQuery).into());
     elements.push(button("Search").on_press(Message::Search).into());
 
 

@@ -1,9 +1,11 @@
+use std::fs;
 use iced::{Renderer};
 use iced::widget::{button, Row};
 
 use strum::{IntoEnumIterator};
 use strum_macros::{EnumIter};
 
+#[derive(Clone)]
 pub struct ModLoader {
     pub page: i32,
 	pub version: String,
@@ -20,9 +22,9 @@ pub struct ModLoader {
 pub enum Message {
     ChangePage(i32),
     
-	VersionSet(String),
+	SetVersion(String),
 	
-    QuerySet(String),
+    SetQuery(String),
     SearchResultSet(Result<Vec<String>, &'static str>),
 	Search,
 
@@ -40,6 +42,7 @@ pub enum Page {
 	ModDownload,
 	CheckFabric,
 	DownloadFabric,
+	LaunchFabric,
 	Finish,
 	Exit
 }
@@ -102,4 +105,26 @@ impl ButtonConfig<'_> {
 		return Row::with_children(buttons).into()
 	}
 
+}
+
+
+pub async fn download_file<'a>(url: &'a str, path: &str) -> Result<&'a str, &'a str> {
+	let client = reqwest::blocking::Client::new();
+	let file_response = client
+		.get(url)
+		.header(reqwest::header::USER_AGENT, "github/prushton2/mcmodmanager")
+		.send();
+
+	let mut file_data = std::io::Cursor::new(file_response.unwrap().bytes().unwrap());
+
+	let file_result = fs::File::create(path);
+
+	let mut file = file_result.unwrap();
+	let resp = std::io::copy(&mut file_data, &mut file);
+
+	if resp.is_err() {
+		return Err("Error copying data to file");
+	}
+
+	return Ok("File downloaded");
 }

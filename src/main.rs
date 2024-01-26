@@ -12,7 +12,8 @@ mod ui;
 mod windows;
 
 use crate::ui::Page;
-use crate::windows::{version_select, mod_select, mod_search, mod_download, check_fabric};
+
+use crate::windows::{version_select, mod_select, mod_search, mod_download, check_fabric, download_fabric, launch_fabric, finish};
 use std::process::exit;
 use std::env::consts;
 
@@ -71,29 +72,83 @@ impl Application for ui::ModLoader {
             Self::Message::ChangePage(n) => {
                 self.page += n;
             },
+
+            Self::Message::SetVersion(v) => {
+                self.version = v;
+            },
+
+            Self::Message::SetQuery(q) => {
+                self.search_query = q;
+            },
+
+            Self::Message::DownloadComplete(result) => {
+                self.page += 1;
+            }
+
+            Self::Message::LaunchFabric(result) => {
+                self.page += 1;
+            }
+
             _ => ()
-        }
+        };
 
         self.page = clamp(self.page, 0, ui::Page::count());
+
+        //random page specific functions (launching commands, reading filesystem, etc)
+        match ui::Page::cast(self.page) {
+            Page::ModSelect => {
+                let result = mod_select::get_installed_mods(&self);
+                if result.is_err() {
+                    exit(1);
+                }
+                self.mods = result.unwrap();
+            }
+            Page::ModDownload => {command = Command::perform(mod_download::download(self.clone()), Self::Message::DownloadComplete)},
+            Page::DownloadFabric => {command = Command::perform(download_fabric::download_fabric(self.clone()), Self::Message::LaunchFabric)},
+            _ => {}
+        }
 
         return command;
     }
 
     fn view(&self) -> iced::Element<'_, Self::Message> {
 
-        let button_config = ui::ButtonConfig::new();
+        let mut button_config = ui::ButtonConfig::new();
         let selected_window: iced::Element<'_, Self::Message>;// = text(format!("{:?}", ui::Page::cast(self.page))).into(); 
         
 
         match Page::cast(self.page) {
             Page::VersionSelect => selected_window = version_select::window(&self),
-            Page::ModSelect => selected_window = mod_select::window(&self),
-            Page::ModSearch => selected_window = mod_search::window(&self),
-            Page::ModDownload => selected_window = mod_download::window(&self),
+            Page::ModSelect => {
+                selected_window = mod_select::window(&self);
+                button_config.next_page = 2;
+            },
+            Page::ModSearch => {
+                selected_window = mod_search::window(&self);
+                // button_config.next_show = false;
+                // button_config.prev_show = false;
+            },
+            Page::ModDownload => {
+                selected_window = mod_download::window(&self);
+                // button_config.next_show = false;
+                // button_config.prev_show = false;
+            },
             Page::CheckFabric => {
                 let has_fabric_result = check_fabric::has_fabric_installed(&self);
                 selected_window = check_fabric::window(&self, &has_fabric_result);
+                button_config.prev_page = -3;
+                button_config.next_page = 3;
             },
+            Page::DownloadFabric => {
+                selected_window = download_fabric::window(&self);
+            },
+            Page::LaunchFabric => {
+                selected_window = launch_fabric::window(&self);
+            },
+            Page::Finish => {
+                selected_window = finish::window(&self);
+                button_config.next_name = "Finish";                
+            }
             Page::Exit => exit(0),
             _ => selected_window = windows::null()
         }
